@@ -1,7 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { ArrowLeft, Share } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { useAssignmentStore } from "@/store/assignment.store";
 import { apiClient } from "@/lib/api";
 import { PaperSection } from "./paper-section";
@@ -10,6 +8,16 @@ import type { ApiResponse } from "@repo/types";
 
 interface GeneratedPaperViewProps {
   assignmentId: string;
+}
+
+// Normalized Metadata Object
+interface PaperMeta {
+  schoolName: string;
+  examTitle: string;
+  subject: string;
+  className: string;
+  timeAllowed: string;
+  totalMarks: number;
 }
 
 export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
@@ -34,6 +42,38 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
     fetchPaper();
   }, [assignmentId]);
 
+  const { flatQuestions, paperMeta } = useMemo(() => {
+    let qIndex = 1;
+    const flat: Array<{ qNum: number; answer: string; solution: string }> = [];
+    let calculatedMarks = 0;
+
+    if (paper?.sections) {
+      paper.sections.forEach((section: any) => {
+        section.questions.forEach((q: any) => {
+          calculatedMarks += q.marks || 0;
+          flat.push({
+            qNum: qIndex++,
+            answer: q.answer,
+            solution: q.solution,
+          });
+        });
+      });
+    }
+
+    // Single Normalized Metadata Object
+    const meta = paper?.metadata || {};
+    const normalizedMeta: PaperMeta = {
+      schoolName: meta.schoolName || "DELHI PUBLIC SCHOOL",
+      examTitle: meta.examTitle || "HALF YEARLY EXAMINATION",
+      subject: meta.subject || "General",
+      className: meta.className || "VIII",
+      timeAllowed: meta.timeAllowed || "2 Hours",
+      totalMarks: calculatedMarks > 0 ? calculatedMarks : (meta.totalMarks || assignment?.totalMarks || 100),
+    };
+
+    return { flatQuestions: flat, paperMeta: normalizedMeta };
+  }, [paper, assignment]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/30">
@@ -57,110 +97,93 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
     );
   }
 
-  // Generate a flat list of questions for the answer key
   let currentQuestionIndex = 1;
-  const flatQuestions: Array<{ qNum: number; answer: string; solution: string }> = [];
 
-  paper.sections.forEach((section: any) => {
-    section.questions.forEach((q: any) => {
-      flatQuestions.push({
-        qNum: currentQuestionIndex++,
-        answer: q.answer,
-        solution: q.solution,
-      });
-    });
-  });
-
-  // Reset for actual rendering
-  currentQuestionIndex = 1;
-
-  // Attempt to parse metadata from AI generated paper
-  const meta = paper?.metadata || {};
-  const schoolName = meta.schoolName || "Delhi Public School";
-  const subjectName = meta.subject || "General";
-  const className = meta.className || "Class 10";
-  const examTitle = meta.examTitle || "Question Paper";
-  const timeAllowed = meta.timeAllowed || "2 Hours";
-  const totalMarks = meta.totalMarks || assignment?.totalMarks || 100;
+  // Header Builder
+  const buildExamHeader = (meta: PaperMeta) => (
+    <div className="border-b-[1px] border-black pb-2 mb-3 text-center print:border-b-2">
+      <h1 className="text-[16px] font-bold text-black uppercase tracking-wider mb-0.5 print:text-[18px]">
+        {meta.schoolName}
+      </h1>
+      <h2 className="text-[14px] font-bold text-black uppercase mb-2 print:text-[15px]">
+        {meta.examTitle}
+      </h2>
+      <div className="flex justify-between items-center text-[12px] font-bold text-black mb-1 px-4 print:px-0">
+        <p>Subject: {meta.subject}</p>
+        <p>Class: {meta.className.toUpperCase().startsWith("CLASS") ? meta.className : `Class ${meta.className}`}</p>
+      </div>
+      <div className="flex justify-between items-center text-[12px] font-bold text-black px-4 print:px-0">
+        <p>Time Allowed: {meta.timeAllowed}</p>
+        <p>Maximum Marks: {meta.totalMarks}</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#F5F5F0]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-100">
       {/* Top action bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-10 flex-shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between z-10 flex-shrink-0 print:hidden">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setView("list")}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={14} />
           </button>
           <div>
-            <h1 className="text-[15px] font-bold text-gray-900 leading-tight">
+            <h1 className="text-[14px] font-bold text-gray-900 leading-tight">
               {assignment?.title || "Assessment Paper"}
             </h1>
-            <p className="text-[11px] text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Generated Successfully
+            <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Generated
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-[12.5px] font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
-            <Share size={14} />
-            Share
+          <button 
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-[12px] font-medium rounded hover:bg-gray-50 transition-colors"
+          >
+            <Printer size={14} />
+            Print
           </button>
           <ExportPdfButton assignment={assignment} paper={paper} />
         </div>
       </div>
 
-      {/* Paper rendering area */}
-      <div className="flex-1 overflow-y-auto p-2 md:p-4 font-serif">
-        <div className="max-w-[800px] mx-auto bg-white shadow-sm border border-gray-300 min-h-[1056px] px-6 py-8">
+      {/* Paper rendering area (Ultra-Compact Print-First Design) */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 font-serif print:p-0 print:overflow-visible">
+        <div className="max-w-[794px] mx-auto bg-white min-h-[1123px] px-8 py-10 shadow-sm border border-gray-300 print:shadow-none print:border-none print:max-w-none print:mx-0 print:px-6 print:py-6">
           
-          {/* Professional Exam Header */}
-          <div className="border-b-[1.5px] border-gray-900 pb-3 mb-4 text-center">
-            <h1 className="text-[18px] font-bold text-gray-900 uppercase tracking-wide mb-1">
-              {schoolName}
-            </h1>
-            <h2 className="text-[15px] font-bold text-gray-800 uppercase">
-              {examTitle}
-            </h2>
-            <h3 className="text-[13px] font-semibold text-gray-800 mt-0.5">
-              Subject: {subjectName} &nbsp;|&nbsp; {className.toUpperCase().startsWith("CLASS") ? className : `Class ${className}`}
-            </h3>
-
-            <div className="flex items-center justify-between mt-3 text-[12px] font-bold text-gray-800 px-2">
-              <p>Time: {timeAllowed}</p>
-              <p>Maximum Marks: {totalMarks}</p>
-            </div>
-            
-            <div className="mt-3 text-left border border-gray-300 p-2 bg-gray-50/50">
-              <ul className="list-disc list-inside text-[11px] text-gray-900 space-y-0.5 ml-1">
-                <li>All questions are compulsory.</li>
-                <li>Read all questions carefully before answering.</li>
+          {buildExamHeader(paperMeta)}
+          
+          {/* Instructions & Student Info (Compact) */}
+          <div className="mb-4 text-black">
+            <div className="border border-black p-1.5 mb-2 bg-gray-50/30 print:bg-transparent">
+              <ul className="list-none text-[10.5px] space-y-0.5 ml-1">
+                <li><strong>General Instructions:</strong> All questions are compulsory. Read carefully. {assignment?.instructions}</li>
               </ul>
             </div>
 
-            <div className="mt-3 text-left">
-              <div className="flex items-center justify-between text-[12px] text-gray-900">
-                <div className="flex items-end gap-1">
-                  <span className="font-semibold">Name:</span>
-                  <div className="border-b border-gray-500 w-40"></div>
-                </div>
-                <div className="flex items-end gap-1">
-                  <span className="font-semibold">Roll No:</span>
-                  <div className="border-b border-gray-500 w-20"></div>
-                </div>
-                <div className="flex items-end gap-1">
-                  <span className="font-semibold">Section:</span>
-                  <div className="border-b border-gray-500 w-16"></div>
-                </div>
+            <div className="flex items-center justify-between text-[11px] px-2 mt-2">
+              <div className="flex items-end gap-1">
+                <span className="font-semibold">Name:</span>
+                <div className="border-b border-black w-40"></div>
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="font-semibold">Roll No:</span>
+                <div className="border-b border-black w-20"></div>
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="font-semibold">Section:</span>
+                <div className="border-b border-black w-16"></div>
               </div>
             </div>
           </div>
 
-          {/* Sections */}
-          <div className="flex flex-col gap-4">
+          {/* Sections (Minimalist) */}
+          <div className="flex flex-col gap-3">
             {paper.sections.map((section: any, idx: number) => {
               const startIndex = currentQuestionIndex;
               currentQuestionIndex += section.questions.length;
@@ -178,33 +201,32 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
             })}
           </div>
 
-          <div className="mt-6 text-center text-[10px] font-bold text-gray-400 uppercase">
+          <div className="mt-4 text-center text-[10px] font-bold text-black uppercase tracking-widest">
             — End of Paper —
           </div>
 
-          {/* Answer Key Section (Page Break ideally in print) */}
-          <div className="mt-8 border-t-[1.5px] border-gray-900 pt-6 print:break-before-page">
-            <h2 className="text-[16px] font-bold text-gray-900 uppercase text-center mb-4">
+          {/* Answer Key Section */}
+          <div className="mt-8 pt-4 border-t-2 border-black print:break-before-page">
+            <h2 className="text-[14px] font-bold text-black uppercase text-center mb-3">
               ANSWER KEY & SOLUTIONS
             </h2>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {flatQuestions.map((fq) => (
-                <div key={fq.qNum} className="border-b border-gray-200 pb-3 last:border-0">
-                  <h3 className="text-[13px] font-bold text-gray-900 mb-1">Question {fq.qNum}</h3>
-                  <div className="bg-emerald-50/50 border border-emerald-100 rounded p-1.5 mb-1.5">
-                    <span className="text-[11px] font-bold text-emerald-800 block mb-0.5">Correct Answer:</span>
-                    <span className="text-[12px] text-gray-900">{fq.answer}</span>
+                <div key={fq.qNum} className="border-b border-gray-300 pb-2 last:border-0 text-black">
+                  <h3 className="text-[12px] font-bold mb-0.5">Q{fq.qNum}.</h3>
+                  <div className="mb-1">
+                    <span className="text-[11px] font-bold text-gray-700">Answer: </span>
+                    <span className="text-[11px]">{fq.answer}</span>
                   </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded p-1.5">
-                    <span className="text-[11px] font-bold text-gray-700 block mb-0.5">Solution / Explanation:</span>
-                    <span className="text-[12px] text-gray-800 leading-snug whitespace-pre-wrap">{fq.solution}</span>
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-700">Solution: </span>
+                    <span className="text-[11px]">{fq.solution}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>

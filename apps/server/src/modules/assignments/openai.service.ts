@@ -26,7 +26,7 @@ function isPermanentError(error: any): boolean {
     PERMANENT_STATUS_CODES.has(status) ||
     code === "invalid_api_key" ||
     code === "account_deactivated" ||
-    status === 429 // Aggressively fallback to mock on ANY 429 to avoid broken generation loops
+    status === 400 || status === 429 // Aggressively fallback to mock on ANY 400 (JSON validation) or 429 (Quota)
   );
 }
 
@@ -149,7 +149,7 @@ The JSON MUST match this exact structure:
     "subject": "<infer subject intelligently from the topic/title (e.g., Algebra -> Mathematics, Photosynthesis -> Biology)>",
     "className": "<infer class from instructions/title or fallback to 'VIII' or '10'>",
     "timeAllowed": "<calculate reasonable time, e.g., '2 Hours' or '45 Minutes'>",
-    "totalMarks": <calculate exact sum of all generated question marks>
+    "totalMarks": 40
   },
   "sections": [
     {
@@ -169,7 +169,7 @@ The JSON MUST match this exact structure:
 }
 
 CRITICAL RULES:
-1. METADATA INFERENCE: You MUST synthesize and infer the "metadata" fields intelligently. Do NOT use generic placeholders like 'Final Examination' if you can infer better. If the topic is 'Linear Equations', subject is 'Mathematics'. Calculate "totalMarks" exactly by summing up all generated question marks.
+1. METADATA INFERENCE: You MUST synthesize and infer the "metadata" fields intelligently. Do NOT use generic placeholders like 'Final Examination'. If the topic is 'Linear Equations', subject is 'Mathematics'. For 'totalMarks', output the exact mathematical sum of all generated question marks as a NUMBER.
 2. SECTIONS: Create EXACTLY ONE section per question type listed in the Requirements.
 3. SECTION TITLES: Use clean titles like "Section A: Short Answer Questions". Do NOT duplicate the word "Section" (e.g. avoid "Section A: Section A:"). Use consecutive letters (A, B, C...).
 4. QUESTION COUNTS & MARKS: You MUST generate the EXACT number of questions requested for each section. Each question MUST carry the EXACT marks specified.

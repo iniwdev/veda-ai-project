@@ -219,26 +219,28 @@ interface AssessmentPDFDocumentProps {
 
 export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocumentProps) {
   let currentQuestionIndex = 1;
-
-  // Use AI-inferred metadata
-  const meta = paper?.metadata || {};
-  const schoolName = meta.schoolName || "Delhi Public School";
-  const subjectName = meta.subject || "General";
-  const className = meta.className || "Class 10";
-  const examTitle = meta.examTitle || "Question Paper";
-  const timeAllowed = meta.timeAllowed || "2 Hours";
-  const totalMarks = meta.totalMarks || assignment?.totalMarks || 100;
-
+  let calculatedMarks = 0;
   const flatQuestions: Array<{ qNum: number; answer: string; solution: string }> = [];
+
   paper?.sections?.forEach((section: any) => {
-    section.questions.forEach((q: any) => {
+    section.questions?.forEach((q: any) => {
+      calculatedMarks += q.marks || 0;
       flatQuestions.push({
         qNum: currentQuestionIndex++,
-        answer: q.answer,
-        solution: q.solution,
+        answer: q.answer || "",
+        solution: q.solution || "",
       });
     });
   });
+
+  // Use AI-inferred metadata & dynamically calculated total marks
+  const meta = paper?.metadata || {};
+  const schoolName = meta.schoolName || "DELHI PUBLIC SCHOOL";
+  const subjectName = meta.subject || "General";
+  const className = meta.className || "Class 10";
+  const examTitle = meta.examTitle || "HALF YEARLY EXAMINATION";
+  const timeAllowed = meta.timeAllowed || "2 Hours";
+  const totalMarks = calculatedMarks > 0 ? calculatedMarks : (meta.totalMarks || assignment?.totalMarks || 100);
 
   // Reset for actual rendering
   currentQuestionIndex = 1;
