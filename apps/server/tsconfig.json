@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@repo/types": ["../../packages/types/src/index.ts"],
+      "@repo/types/*": ["../../packages/types/src/*"],
+      "@repo/prompts": ["../../packages/prompts/src/index.ts"],
+      "@repo/prompts/*": ["../../packages/prompts/src/*"]
+    }
+  },
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/prompts" }
+  ],
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}
