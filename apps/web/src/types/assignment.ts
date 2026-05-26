@@ -10,6 +10,8 @@ export interface Assignment {
   assignedOn: string;
   dueDate?: string;
   status?: AssignmentStatus;
+  instructions?: string;
+  totalMarks?: number;
 }
 
 // ─── Question (Create Form) ───────────────────────────────────────────────────

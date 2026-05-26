@@ -23,40 +23,40 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   header: {
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderBottomColor: "#111827",
-    paddingBottom: 15,
-    marginBottom: 20,
+    paddingBottom: 10,
+    marginBottom: 15,
   },
   schoolName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 700,
     textAlign: "center",
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 3,
     color: "#111827",
   },
   subjectText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 700,
     textAlign: "center",
     marginBottom: 2,
     color: "#1F2937",
   },
   classText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 600,
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 10,
     color: "#374151",
   },
   metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   metaText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 700,
     color: "#111827",
   },
@@ -96,25 +96,25 @@ const styles = StyleSheet.create({
   studentInfoLineLg: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 140,
+    width: 120,
   },
   studentInfoLineSm: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 80,
+    width: 60,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: 15,
   },
   sectionHeader: {
     borderBottomWidth: 1,
     borderBottomColor: "#111827",
-    paddingBottom: 5,
-    marginBottom: 10,
-    marginTop: 10,
+    paddingBottom: 4,
+    marginBottom: 8,
+    marginTop: 6,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     color: "#111827",
     textTransform: "uppercase",
@@ -127,35 +127,38 @@ const styles = StyleSheet.create({
   },
   questionRow: {
     flexDirection: "row",
-    marginBottom: 12,
+    marginBottom: 8,
     alignItems: "flex-start",
   },
   questionNumber: {
-    width: 25,
-    fontSize: 10,
-    fontWeight: 600,
+    width: 20,
+    fontSize: 9,
+    fontWeight: 700,
     color: "#111827",
   },
   questionContent: {
     flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   questionText: {
-    fontSize: 10,
-    color: "#1F2937",
-    lineHeight: 1.4,
+    fontSize: 9,
+    color: "#111827",
+    lineHeight: 1.3,
   },
-  marksBadge: {
+  difficultyText: {
     fontSize: 8,
-    fontWeight: 600,
-    color: "#6B7280",
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+    color: "#4B5563",
+    marginLeft: 4,
+  },
+  marksText: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: "#111827",
     marginLeft: 10,
   },
   footer: {
-    marginTop: 30,
+    marginTop: 20,
     textAlign: "center",
     fontSize: 8,
     fontWeight: 700,
@@ -217,7 +220,20 @@ interface AssessmentPDFDocumentProps {
 export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocumentProps) {
   let currentQuestionIndex = 1;
   const totalMarks = assignment?.totalMarks || 100;
-  const timeAllowed = Math.round(totalMarks * 1.5);
+  const timeAllowedStr = Math.round(totalMarks * 1.5).toString() + " Minutes";
+
+  // Attempt to parse metadata from instructions
+  const instr = assignment?.instructions || "";
+  const extract = (key: string, fallback: string) => {
+    const match = instr.match(new RegExp(`${key}\\s*:\\s*([^\\n,]+)`, "i"));
+    return match ? match[1].trim() : fallback;
+  };
+
+  const schoolName = extract("schoolName", "Delhi Public School");
+  const subjectName = extract("subjectName", "Final Examination");
+  const className = extract("class(?:Name)?", "Class 10");
+  const examTitle = extract("examTitle", assignment?.title || "Question Paper");
+  const timeAllowed = extract("timeAllowed", timeAllowedStr);
 
   const flatQuestions: Array<{ qNum: number; answer: string; solution: string }> = [];
   paper?.sections?.forEach((section: any) => {
@@ -238,12 +254,12 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
       <Page size="A4" style={styles.page}>
         {/* Header Area */}
         <View style={styles.header}>
-          <Text style={styles.schoolName}>Delhi Public School, Sector-4, Bokaro</Text>
-          <Text style={styles.subjectText}>Subject: {assignment?.title || "Assessment"}</Text>
-          <Text style={styles.classText}>Class: 8</Text>
+          <Text style={styles.schoolName}>{schoolName}</Text>
+          <Text style={styles.subjectText}>{examTitle}</Text>
+          <Text style={styles.classText}>Subject: {subjectName} | {className.startsWith("Class") ? className : `Class ${className}`}</Text>
 
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>Time Allowed: {timeAllowed} Minutes</Text>
+            <Text style={styles.metaText}>Time Allowed: {timeAllowed}</Text>
             <Text style={styles.metaText}>Maximum Marks: {totalMarks}</Text>
           </View>
 
@@ -293,10 +309,13 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
                   <View key={qIdx} style={styles.questionRow} wrap={false}>
                     <Text style={styles.questionNumber}>Q{currentQuestionIndex++}.</Text>
                     <View style={styles.questionContent}>
-                      <Text style={styles.questionText}>{q.question}</Text>
+                      <Text style={styles.questionText}>
+                        {q.question}
+                        <Text style={styles.difficultyText}> ({q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)})</Text>
+                      </Text>
                     </View>
-                    <Text style={styles.marksBadge}>
-                      [{q.marks} {q.marks === 1 ? "Mark" : "Marks"}]
+                    <Text style={styles.marksText}>
+                      [{q.marks}]
                     </Text>
                   </View>
                 );

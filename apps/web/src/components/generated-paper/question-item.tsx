@@ -1,4 +1,3 @@
-import { DifficultyBadge } from "./difficulty-badge";
 
 interface QuestionItemProps {
   index: number;
@@ -9,20 +8,20 @@ interface QuestionItemProps {
 
 export function QuestionItem({ index, question, difficulty, marks }: QuestionItemProps) {
   return (
-    <div className="flex items-start gap-4 py-3 group hover:bg-gray-50 px-2 -mx-2 rounded-lg transition-colors">
-      <div className="flex-shrink-0 w-6 text-right font-medium text-gray-900 mt-0.5">
+    <div className="flex items-start gap-3 py-1.5 px-1 -mx-1 group hover:bg-gray-50 transition-colors">
+      <div className="flex-shrink-0 w-6 text-right font-semibold text-gray-900 mt-0.5 text-[14px]">
         Q{index}.
       </div>
       <div className="flex-1">
-        <p className="text-[13px] text-gray-800 leading-relaxed font-medium">
+        <p className="text-[14px] text-gray-900 leading-snug">
           {question}
+          <span className="text-[12px] text-gray-500 font-medium ml-2">
+            ({difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})
+          </span>
         </p>
-        <div className="flex items-center gap-2 mt-2">
-          <DifficultyBadge difficulty={difficulty} />
-        </div>
       </div>
-      <div className="flex-shrink-0 text-[12px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-        [{marks} {marks === 1 ? "Mark" : "Marks"}]
+      <div className="flex-shrink-0 text-[13px] font-bold text-gray-800">
+        [{marks}]
       </div>
     </div>
   );
