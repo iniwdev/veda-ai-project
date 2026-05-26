@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { ZodError } from "zod";
 import type { ApiResponse } from "@repo/types";
 
 export class AppError extends Error {
@@ -19,6 +20,17 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  if (err instanceof ZodError) {
+    const response: ApiResponse = {
+      success: false,
+      error: "Validation failed",
+      message: err.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", "),
+      timestamp: new Date().toISOString(),
+    };
+    res.status(400).json(response);
+    return;
+  }
+
   if (err instanceof AppError) {
     const response: ApiResponse = {
       success: false,

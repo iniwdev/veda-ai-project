@@ -5,15 +5,8 @@ import { devtools } from "zustand/middleware";
 import type { Assignment, AssignmentView } from "@/types/assignment";
 import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
 
-// ─── Seed Data ────────────────────────────────────────────────────────────────
-// Toggle: empty array → shows EmptyState; populated → shows AssignmentList
-
-const SEED_ASSIGNMENTS: Assignment[] = Array.from({ length: 8 }, (_, i) => ({
-  id: `assignment-${i}`,
-  title: "Quiz on Electricity",
-  assignedOn: "20-06-2025",
-  dueDate: i % 4 === 0 ? undefined : "21-06-2025",
-}));
+import { apiClient } from "@/lib/api";
+import type { ApiResponse } from "@repo/types";
 
 // ─── State Shape ──────────────────────────────────────────────────────────────
 
@@ -21,6 +14,8 @@ interface AssignmentState {
   assignments: Assignment[];
   view: AssignmentView;
   searchQuery: string;
+  isLoading: boolean;
+  error: string | null;
 
   // Form Draft State
   createDraft: Partial<CreateAssignmentFormValues>;
@@ -30,7 +25,9 @@ interface AssignmentState {
   // Actions
   setView: (view: AssignmentView) => void;
   setSearchQuery: (query: string) => void;
-  deleteAssignment: (id: string) => void;
+  fetchAssignments: () => Promise<void>;
+  addAssignment: (assignment: Assignment) => void;
+  deleteAssignment: (id: string) => Promise<void>;
   navigateToCreate: () => void;
   cancelCreate: () => void;
 }
@@ -40,10 +37,11 @@ interface AssignmentState {
 export const useAssignmentStore = create<AssignmentState>()(
   devtools(
     (set, get) => ({
-      assignments: SEED_ASSIGNMENTS,
-      // Derive initial view from seed data — no need to manually sync
-      view: SEED_ASSIGNMENTS.length > 0 ? "list" : "empty",
+      assignments: [],
+      view: "list", // Will be updated on fetch
       searchQuery: "",
+      isLoading: false,
+      error: null,
       createDraft: {},
 
       setCreateDraft: (draft) =>
@@ -56,19 +54,71 @@ export const useAssignmentStore = create<AssignmentState>()(
       setSearchQuery: (query) =>
         set({ searchQuery: query }, false, "setSearchQuery"),
 
-      deleteAssignment: (id) =>
+      fetchAssignments: async () => {
+        set({ isLoading: true, error: null }, false, "fetchAssignments/start");
+        try {
+          const res = await apiClient.get<ApiResponse<any[]>>("/assignments");
+          const data = res.data || [];
+          
+          // Map backend format to frontend format
+          const mappedAssignments: Assignment[] = data.map((item) => ({
+            id: item._id,
+            title: item.title,
+            assignedOn: new Date(item.createdAt).toLocaleDateString("en-GB"),
+            dueDate: item.dueDate,
+          }));
+
+          set(
+            {
+              assignments: mappedAssignments,
+              view: mappedAssignments.length > 0 ? "list" : "empty",
+              isLoading: false,
+            },
+            false,
+            "fetchAssignments/success"
+          );
+        } catch (err: any) {
+          set({ error: err.message, isLoading: false }, false, "fetchAssignments/error");
+        }
+      },
+
+      addAssignment: (assignment) =>
+        set(
+          (state) => {
+            const next = [assignment, ...state.assignments];
+            return {
+              assignments: next,
+              view: "list",
+            };
+          },
+          false,
+          "addAssignment"
+        ),
+
+      deleteAssignment: async (id) => {
+        // Optimistic delete
+        const prevAssignments = get().assignments;
+        
         set(
           (state) => {
             const next = state.assignments.filter((a) => a.id !== id);
-            // Auto-transition to empty state when last assignment is deleted
             return {
               assignments: next,
               view: next.length === 0 ? "empty" : "list",
             };
           },
           false,
-          "deleteAssignment",
-        ),
+          "deleteAssignment/optimistic"
+        );
+
+        try {
+          await apiClient.delete(`/assignments/${id}`);
+        } catch (err) {
+          // Revert on failure
+          set({ assignments: prevAssignments, view: prevAssignments.length > 0 ? "list" : "empty" }, false, "deleteAssignment/revert");
+          throw err;
+        }
+      },
 
       navigateToCreate: () => set({ view: "create" }, false, "navigateToCreate"),
 

@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAssignmentStore } from "@/store/assignment.store";
 import { CreateAssignmentSchema } from "@/lib/validations/assignment";
 import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
+import type { ApiResponse } from "@repo/types";
 
 import { UploadZone } from "./form/upload-zone";
 import { AssignmentTitleField } from "./form/assignment-title-field";
@@ -62,12 +65,31 @@ export function CreateAssignment() {
   }, [watch, setCreateDraft]);
 
   const onSubmit = async (data: CreateAssignmentFormValues) => {
-    // Simulate API call
-    console.log("Submitting assignment:", data);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    // Clear draft and redirect on success
-    useAssignmentStore.getState().clearCreateDraft();
-    cancelCreate();
+    try {
+      const res = await apiClient.post<ApiResponse<any>>("/assignments", {
+        title: data.assignmentTitle,
+        dueDate: data.dueDate,
+        instructions: data.instructions,
+        questions: data.questions,
+        totalMarks: data.questions.reduce((sum, q) => sum + q.numQuestions * q.marks, 0),
+        uploadedFile: data.file ? "uploaded-file-placeholder" : undefined,
+      });
+
+      if (res.data) {
+        useAssignmentStore.getState().addAssignment({
+          id: res.data._id,
+          title: res.data.title,
+          assignedOn: new Date(res.data.createdAt).toLocaleDateString("en-GB"),
+          dueDate: res.data.dueDate,
+        });
+      }
+
+      toast.success("Assignment created successfully");
+      useAssignmentStore.getState().clearCreateDraft();
+      cancelCreate();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create assignment");
+    }
   };
 
   return (

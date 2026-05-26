@@ -11,6 +11,7 @@ import { connectRedis, disconnectRedis } from "./config/redis.js";
 import { createSocketServer } from "./sockets/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import healthRouter from "./routes/health.js";
+import assignmentRouter from "./modules/assignments/assignment.routes.js";
 
 // ─── App Bootstrap ─────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ async function bootstrap(): Promise<void> {
 
   // ── Routes ────────────────────────────────────────────────────────────────
   app.use(env.API_PREFIX, healthRouter);
+  app.use(`${env.API_PREFIX}/assignments`, assignmentRouter);
 
   // 404 handler (must be after all routes)
   app.use(notFoundHandler);
