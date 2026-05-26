@@ -185,7 +185,8 @@ CRITICAL RULES:
    - "answer" must be the final direct answer.
    - "solution" must contain detailed steps (for numericals), conceptual explanations (for theory), or a marking rubric (for diagrams/long answers).
 7. difficulty MUST be strictly one of: "easy", "medium", "hard" (lowercase).
-8. ADHERE STRICTLY to any Special Instructions provided.`;
+8. ADHERE STRICTLY to any Special Instructions provided.
+9. UNIQUE QUESTIONS: EVERY SINGLE QUESTION MUST BE UNIQUE. Do NOT repeat concepts, wording, or questions across the paper.`;
 
     const userPrompt = `Create a realistic academic examination paper for:
 
@@ -234,7 +235,11 @@ Respond with ONLY the JSON object. Do not include any other text.`;
       }
 
       console.info(`[AI] Paper generated successfully — ${validated.data.sections.length} sections`);
-      return validated.data;
+      
+      // Post-process to ensure all questions are strictly unique
+      const deduplicatedPaper = await this.deduplicateQuestions(validated.data, assignment.title);
+      
+      return deduplicatedPaper;
     } catch (error: any) {
       if (isPermanentError(error)) {
         console.warn(`[AI] Permanent error (${error?.status ?? "unknown"}) — falling back to mock generator`);
@@ -243,6 +248,113 @@ Respond with ONLY the JSON object. Do not include any other text.`;
       console.error("[AI] Transient error:", error?.message ?? error);
       throw error;
     }
+  }
+
+  private async generateSingleQuestion(topic: string, sectionTitle: string, marks: number, existingQuestions: string[]) {
+    const prompt = `You are a strict academic evaluator. Generate a SINGLE completely unique question.
+Topic: "${topic}"
+Section/Type: "${sectionTitle}"
+Marks: ${marks}
+
+CRITICAL: Your question MUST NOT be similar to any of these existing questions:
+${existingQuestions.map((q) => `- ${q}`).join("\n")}
+
+Respond with ONLY a valid JSON object matching this schema:
+{
+  "question": "<unique question text>",
+  "difficulty": "easy" | "medium" | "hard",
+  "marks": ${marks},
+  "answer": "<direct, concise correct answer>",
+  "solution": "<detailed solution/explanation>"
+}`;
+
+    const response = await groq.chat.completions.create({
+      model: env.GROQ_MODEL,
+      messages: [{ role: "system", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.8, // higher temp for more randomness/uniqueness
+      max_tokens: 1024,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("Empty response");
+
+    const parsed = JSON.parse(content);
+    return {
+      question: parsed.question,
+      difficulty: parsed.difficulty || "medium",
+      marks: parsed.marks || marks,
+      answer: parsed.answer || "",
+      solution: parsed.solution || "",
+    };
+  }
+
+  private async deduplicateQuestions(paper: AIGeneratedPaper, assignmentTitle: string): Promise<AIGeneratedPaper> {
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^\w\s]|_/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    function calculateSimilarity(str1: string, str2: string): number {
+      const s1 = normalize(str1);
+      const s2 = normalize(str2);
+      if (!s1 || !s2) return 0;
+      if (s1 === s2) return 1;
+
+      const words1 = new Set(s1.split(" "));
+      const words2 = new Set(s2.split(" "));
+      let intersection = 0;
+      for (const w of words1) if (words2.has(w)) intersection++;
+
+      const union = words1.size + words2.size - intersection;
+      return intersection / union;
+    }
+
+    const uniqueQuestions: string[] = [];
+
+    for (const section of paper.sections) {
+      for (let i = 0; i < section.questions.length; i++) {
+        let q = section.questions[i];
+        if (!q) continue;
+        
+        let isDuplicate = false;
+
+        for (const existing of uniqueQuestions) {
+          // A threshold of 0.75 usually catches highly similar or identical questions
+          if (calculateSimilarity(q.question, existing) > 0.75) {
+            isDuplicate = true;
+            break;
+          }
+        }
+
+        if (isDuplicate) {
+          console.info(`[AI] Duplicate detected: "${q.question.substring(0, 40)}...". Regenerating...`);
+          try {
+            const newQ = await this.generateSingleQuestion(
+              assignmentTitle,
+              section.title,
+              q.marks,
+              uniqueQuestions
+            );
+            if (newQ && newQ.question) {
+              section.questions[i] = newQ as any;
+              uniqueQuestions.push(newQ.question);
+            } else {
+              uniqueQuestions.push(q.question);
+            }
+          } catch (err) {
+            console.error("[AI] Failed to regenerate single question, keeping original", err);
+            uniqueQuestions.push(q.question);
+          }
+        } else {
+          uniqueQuestions.push(q.question);
+        }
+      }
+    }
+
+    return paper;
   }
 }
 
