@@ -23,7 +23,16 @@ redisConnection.on("error", (err: Error) => {
 
 export async function connectRedis(): Promise<void> {
   try {
-    await Promise.all([redisConnection.connect(), redisSubscriber.connect()]);
+    // Only connect if not already connected/connecting — ioredis throws if you
+    // call connect() on an instance that's already in connecting/ready state.
+    const connectIfNeeded = (client: Redis) => {
+      const status = client.status;
+      if (status === "wait" || status === "close" || status === "end") {
+        return client.connect();
+      }
+      return Promise.resolve();
+    };
+    await Promise.all([connectIfNeeded(redisConnection), connectIfNeeded(redisSubscriber)]);
   } catch (error) {
     console.error("❌ Redis connection failed:", error);
     throw error;
