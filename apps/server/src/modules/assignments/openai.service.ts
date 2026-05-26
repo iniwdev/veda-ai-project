@@ -54,44 +54,44 @@ function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
 
       switch (config.type) {
         case "Multiple Choice Questions":
-          question = `In the context of ${assignment.title}, which of the following is the most accurate statement?\n(A) It relies entirely on theoretical frameworks.\n(B) It requires empirical validation to be considered effective.\n(C) It is mutually exclusive to other paradigms.\n(D) It serves as a foundational component without practical application.`;
+          question = `Q${i + 1}. In the context of ${assignment.title} (Concept ${i + 1}), which of the following is the most accurate statement?\n(A) It relies entirely on theoretical frameworks.\n(B) It requires empirical validation to be considered effective.\n(C) It is mutually exclusive to other paradigms.\n(D) It serves as a foundational component without practical application.`;
           answer = "(B) It requires empirical validation to be considered effective.";
           solution = "Option B is correct because empirical validation is a core requirement for establishing effectiveness in modern applications of this topic. Theoretical frameworks alone (A) are insufficient.";
           break;
         case "True/False":
-          question = `True or False: The primary assumptions underlying ${assignment.title} can be universally applied across all disciplines without modification.`;
+          question = `Q${i + 1}. True or False: The primary assumptions underlying ${assignment.title} (Perspective ${i + 1}) can be universally applied across all disciplines without modification.`;
           answer = "False";
           solution = "The assumptions cannot be universally applied; they must be adapted based on context and discipline-specific constraints.";
           break;
         case "Fill in the Blanks":
-          question = `Fill in the blank: When approaching problems related to ${assignment.title}, the initial step often involves establishing a robust _______.`;
+          question = `Q${i + 1}. Fill in the blank: When approaching problems related to ${assignment.title} (Scenario ${i + 1}), the initial step often involves establishing a robust _______.`;
           answer = "framework";
           solution = "Establishing a robust framework provides the necessary structure to approach complex problems methodically.";
           break;
         case "Short Questions":
-          question = `${randomIdentify} the core elements of ${assignment.title} and briefly describe their immediate impact on the system.`;
+          question = `Q${i + 1}. ${randomIdentify} the core elements of ${assignment.title} relating to Factor ${i + 1} and briefly describe their immediate impact on the system.`;
           answer = "The core elements include structural integrity, dynamic adaptability, and efficiency.";
           solution = "These elements immediately impact the system by increasing resilience to external shocks and improving overall throughput.";
           break;
         case "Long Answer Questions":
-          question = `${randomVerb} the theoretical and practical implications of ${assignment.title}. Support your arguments with real-world case studies and relevant academic literature.`;
+          question = `Q${i + 1}. ${randomVerb} the theoretical and practical implications of ${assignment.title} with a focus on Case Study ${i + 1}. Support your arguments with relevant academic literature.`;
           answer = "Theoretical implications involve shifting paradigms in understanding complex systems, while practical implications include improved implementation strategies in industry.";
           solution = "A complete answer should discuss the historical context, cite at least two case studies (e.g., the 2021 Implementation Study), and critically evaluate the long-term benefits versus initial costs.";
           break;
         case "Diagram/Graph-Based Questions":
-          question = `Draw a detailed schematic representing the workflow or core structure of ${assignment.title}. Clearly label all inputs, processes, and outputs.`;
+          question = `Q${i + 1}. Draw a detailed schematic representing the workflow or core structure of ${assignment.title} (Module ${i + 1}). Clearly label all inputs, processes, and outputs.`;
           answer = "The diagram should include 3 main components: Input layer, Processing node, and Output interface.";
           solution = "Award marks as follows: 2 marks for correct structure, 2 marks for clear labeling of inputs/outputs, 1 mark for overall neatness and flow arrows.";
           break;
         case "Numerical Problems":
           const val1 = (i + 1) * 15;
           const val2 = (i + 1) * 7.5;
-          question = `A system modeled on ${assignment.title} has an initial state variable of ${val1}. If it undergoes a transformation applying a factor of ${val2}, calculate the final output. Show all intermediate steps and formulas used.`;
+          question = `Q${i + 1}. A system modeled on ${assignment.title} has an initial state variable of ${val1}. If it undergoes a transformation applying a factor of ${val2}, calculate the final output. Show all intermediate steps and formulas used.`;
           answer = `${val1 * val2}`;
           solution = `Step 1: Identify formula Output = Initial × Factor.\nStep 2: Substitute values: Output = ${val1} × ${val2}.\nStep 3: Calculate final result = ${val1 * val2}.`;
           break;
         default:
-          question = `Regarding ${assignment.title}: Examine the key challenges and propose potential solutions based on current literature.`;
+          question = `Q${i + 1}. Regarding ${assignment.title} Aspect ${i + 1}: Examine the key challenges and propose potential solutions based on current literature.`;
           answer = "Key challenges include resource limitation and scalability.";
           solution = "Solutions proposed in literature focus on distributed processing and optimized resource allocation algorithms.";
       }
@@ -290,12 +290,17 @@ Respond with ONLY a valid JSON object matching this schema:
   }
 
   private async deduplicateQuestions(paper: AIGeneratedPaper, assignmentTitle: string): Promise<AIGeneratedPaper> {
+    const stopWords = new Set(["the", "is", "at", "which", "on", "a", "an", "and", "or", "what", "how", "why", "who", "when", "where", "to", "in", "of", "for", "with", "as", "by", "are", "do", "does", "did", "can", "could", "would", "should", "explain", "describe", "define", "briefly"]);
+
     const normalize = (s: string) =>
       s
         .toLowerCase()
         .replace(/[^\w\s]|_/g, "")
         .replace(/\s+/g, " ")
-        .trim();
+        .trim()
+        .split(" ")
+        .filter((w) => !stopWords.has(w) && w.length > 2)
+        .join(" ");
 
     function calculateSimilarity(str1: string, str2: string): number {
       const s1 = normalize(str1);
@@ -322,8 +327,8 @@ Respond with ONLY a valid JSON object matching this schema:
         let isDuplicate = false;
 
         for (const existing of uniqueQuestions) {
-          // A threshold of 0.75 usually catches highly similar or identical questions
-          if (calculateSimilarity(q.question, existing) > 0.75) {
+          // With stopwords removed, 0.45 is a strong indicator of semantic duplication
+          if (calculateSimilarity(q.question, existing) > 0.45) {
             isDuplicate = true;
             break;
           }
