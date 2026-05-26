@@ -85,12 +85,14 @@ interface NavItemProps {
   label: string;
   href: string;
   active?: boolean;
+  onClick?: () => void;
   badge?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, href, active = false, badge }) => (
+const NavItem: React.FC<NavItemProps> = ({ icon, label, href, active = false, onClick, badge }) => (
   <Link
     href={href}
+    onClick={onClick}
     className={`
       group w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] font-medium
       transition-all duration-300 cursor-pointer
@@ -119,11 +121,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, href, active = false, ba
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const navigateToCreate = useAssignmentStore((s) => s.navigateToCreate);
+  const setView = useAssignmentStore((s) => s.setView);
 
   const navItems = [
     { icon: <GridIcon />, label: "Home", href: "/dashboard/home" },
     { icon: <UsersIcon />, label: "My Groups", href: "/dashboard/groups" },
-    { icon: <FileTextIcon />, label: "Assignments", href: "/dashboard/assignments", badge: 10 },
+    { icon: <FileTextIcon />, label: "Assignments", href: "/dashboard/assignments", badge: 10, onClick: () => setView("list") },
     { icon: <WandIcon />, label: "AI Teacher's Toolkit", href: "/dashboard/toolkit" },
     { icon: <BookIcon />, label: "My Library", href: "/dashboard/library" },
   ];
@@ -156,6 +159,7 @@ export const Sidebar: React.FC = () => {
             icon={item.icon}
             label={item.label}
             href={item.href}
+            onClick={item.onClick}
             active={pathname?.startsWith(item.href) || false}
           />
         ))}
