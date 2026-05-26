@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { Assignment, AssignmentView } from "@/types/assignment";
+import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 // Toggle: empty array → shows EmptyState; populated → shows AssignmentList
@@ -21,6 +22,11 @@ interface AssignmentState {
   view: AssignmentView;
   searchQuery: string;
 
+  // Form Draft State
+  createDraft: Partial<CreateAssignmentFormValues>;
+  setCreateDraft: (draft: Partial<CreateAssignmentFormValues>) => void;
+  clearCreateDraft: () => void;
+
   // Actions
   setView: (view: AssignmentView) => void;
   setSearchQuery: (query: string) => void;
@@ -38,6 +44,12 @@ export const useAssignmentStore = create<AssignmentState>()(
       // Derive initial view from seed data — no need to manually sync
       view: SEED_ASSIGNMENTS.length > 0 ? "list" : "empty",
       searchQuery: "",
+      createDraft: {},
+
+      setCreateDraft: (draft) =>
+        set((state) => ({ createDraft: { ...state.createDraft, ...draft } }), false, "setCreateDraft"),
+
+      clearCreateDraft: () => set({ createDraft: {} }, false, "clearCreateDraft"),
 
       setView: (view) => set({ view }, false, "setView"),
 
