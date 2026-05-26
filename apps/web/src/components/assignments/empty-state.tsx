@@ -81,24 +81,26 @@ export const EmptyState: React.FC = () => {
   const navigateToCreate = useAssignmentStore((s) => s.navigateToCreate);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[480px] px-6">
-      <EmptyStateIllustration />
-      <div className="mt-6 text-center max-w-sm">
-        <h2 className="text-[18px] font-bold text-gray-900 mb-2.5 tracking-[-0.01em]">
-          No assignments yet
-        </h2>
-        <p className="text-[13.5px] text-gray-500 leading-[1.65] mb-7">
-          Create your first assignment to start collecting and grading student submissions.
-          You can set up rubrics, define marking criteria, and let AI assist with grading.
-        </p>
-        <button
-          onClick={navigateToCreate}
-          className="inline-flex items-center gap-2 bg-[#111827] text-white text-sm font-semibold px-6 py-3 rounded-full hover:bg-[#1f2937] active:scale-[0.98] transition-all duration-150 shadow-sm"
-        >
-          <PlusIcon size={15} />
-          <span>Create Your First Assignment</span>
-        </button>
+    <main className="flex-1 overflow-y-auto bg-[#f5f5f5]">
+      <div className="flex flex-col items-center justify-center h-full min-h-[480px] px-6">
+        <EmptyStateIllustration />
+        <div className="mt-6 text-center max-w-sm">
+          <h2 className="text-[18px] font-bold text-gray-900 mb-2.5 tracking-[-0.01em]">
+            No assignments yet
+          </h2>
+          <p className="text-[13.5px] text-gray-500 leading-[1.65] mb-7">
+            Create your first assignment to start collecting and grading student submissions.
+            You can set up rubrics, define marking criteria, and let AI assist with grading.
+          </p>
+          <button
+            onClick={navigateToCreate}
+            className="inline-flex items-center gap-2 bg-[#111827] text-white text-sm font-semibold px-6 py-3 rounded-full hover:bg-[#1f2937] active:scale-[0.98] transition-all duration-150 shadow-sm"
+          >
+            <PlusIcon size={15} />
+            <span>Create Your First Assignment</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </main>
   );
 };
