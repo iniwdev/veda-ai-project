@@ -25,24 +25,19 @@ export function ExportPdfButton({ assignment }: ExportPdfButtonProps) {
       const module = await import("html2pdf.js");
       const html2pdf: any = module.default ? module.default : module;
       
-      const originalElement = document.getElementById("question-paper");
-      if (!originalElement) throw new Error("Paper element not found");
+      const element = document.getElementById("question-paper");
+      if (!element) throw new Error("Paper element not found");
       
-      // Clone the element to avoid mutating the visible DOM
-      const clone = originalElement.cloneNode(true) as HTMLElement;
+      // Temporarily swap out Tailwind color classes for inline hex styles directly on the DOM
+      // This prevents the blank page issue caused by cloning off-screen, while still fixing the oklch crash
+      const allEls = element.querySelectorAll('*');
+      const originalStyles = new Map();
       
-      // Position offscreen so it doesn't disrupt UI but still has layout for html2canvas
-      clone.style.position = 'absolute';
-      clone.style.top = '-9999px';
-      clone.style.left = '-9999px';
-      document.body.appendChild(clone);
-      
-      // html2canvas completely crashes on Tailwind v4 'oklch/oklab' colors.
-      // We must aggressively strip all color classes and replace them with standard hex inline styles.
-      const allEls = clone.querySelectorAll('*');
       allEls.forEach((el: any) => {
         const className = el.className;
         if (typeof className === 'string') {
+          originalStyles.set(el, { className, color: el.style.color, bg: el.style.backgroundColor, border: el.style.borderColor });
+          
           // Add safe hex styles
           if (className.includes('text-gray-900') || className.includes('text-black')) el.style.color = '#111827';
           if (className.includes('text-gray-700')) el.style.color = '#374151';
@@ -78,10 +73,19 @@ export function ExportPdfButton({ assignment }: ExportPdfButtonProps) {
         jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
       };
 
-      await html2pdf().set(opt).from(clone).save();
+      await html2pdf().set(opt).from(element).save();
       
-      // Cleanup clone
-      document.body.removeChild(clone);
+      // Restore original DOM state exactly as it was
+      allEls.forEach((el: any) => {
+        if (originalStyles.has(el)) {
+          const original = originalStyles.get(el);
+          el.className = original.className;
+          el.style.color = original.color;
+          el.style.backgroundColor = original.bg;
+          el.style.borderColor = original.border;
+        }
+      });
+      
     } catch (error) {
       originalConsoleError("Failed to generate PDF:", error);
       alert("Failed to generate PDF. Please try again.");
