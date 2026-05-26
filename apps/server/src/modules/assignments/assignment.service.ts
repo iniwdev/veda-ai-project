@@ -31,6 +31,20 @@ export class AssignmentService {
       throw new AppError(404, "Assignment not found");
     }
   }
+
+  async generateAssignment(id: string): Promise<void> {
+    const assignment = await AssignmentModel.findById(id);
+    if (!assignment) {
+      throw new AppError(404, "Assignment not found");
+    }
+
+    // Set status to processing initially before enqueueing to prevent race conditions
+    assignment.status = "processing";
+    await assignment.save();
+
+    const { generateAssessmentQueue } = await import("./assignment.queue.js");
+    await generateAssessmentQueue.add("generate", { assignmentId: id });
+  }
 }
 
 export const assignmentService = new AssignmentService();

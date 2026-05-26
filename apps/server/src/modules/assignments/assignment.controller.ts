@@ -60,6 +60,21 @@ export class AssignmentController {
       next(error);
     }
   }
+
+  async generate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      await assignmentService.generateAssignment(id);
+      
+      res.status(202).json({
+        success: true,
+        message: "Assignment generation job enqueued",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const assignmentController = new AssignmentController();

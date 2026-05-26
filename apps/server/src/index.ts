@@ -12,6 +12,7 @@ import { createSocketServer } from "./sockets/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import healthRouter from "./routes/health.js";
 import assignmentRouter from "./modules/assignments/assignment.routes.js";
+import "./modules/assignments/assignment.worker.js"; // Initialize BullMQ worker
 
 // ─── App Bootstrap ─────────────────────────────────────────────────────────────
 
