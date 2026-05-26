@@ -29,6 +29,7 @@ const processor = async (job: Job<GenerateAssessmentJobData>) => {
     // Save generated paper
     const paper = new GeneratedPaperModel({
       assignmentId: assignment._id,
+      metadata: generatedContent.metadata,
       sections: generatedContent.sections,
     });
     await paper.save();
