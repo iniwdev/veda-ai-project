@@ -12,13 +12,9 @@ export const generateAssessmentQueue = new Queue<GenerateAssessmentJobData>(
   {
     connection: redisConnection,
     defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 2000,
-      },
+      attempts: 1,          // No retries — permanent errors (quota, auth) should not be retried
       removeOnComplete: true,
-      removeOnFail: false, // Keep failed jobs for debugging
+      removeOnFail: false,  // Keep failed jobs for debugging
     },
   }
 );
