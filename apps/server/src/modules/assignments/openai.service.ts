@@ -36,7 +36,10 @@ function isPermanentError(error: any): boolean {
 function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
   console.warn("[AI] Groq unavailable — using mock paper generator");
 
+  let computedTotalMarks = 0;
+
   const sections = assignment.questionConfigurations.map((config, sectionIdx) => {
+    computedTotalMarks += config.numQuestions * config.marks;
     const difficulties: Array<"easy" | "medium" | "hard"> = ["easy", "medium", "hard"];
 
     const questions = Array.from({ length: config.numQuestions }, (_, i) => {
@@ -105,7 +108,27 @@ function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
     };
   });
 
-  return { sections };
+  // Basic mock inference
+  const lowerTitle = assignment.title.toLowerCase();
+  let mockSubject = "General";
+  if (lowerTitle.includes("math") || lowerTitle.includes("algebra") || lowerTitle.includes("linear")) mockSubject = "Mathematics";
+  else if (lowerTitle.includes("science") || lowerTitle.includes("physics") || lowerTitle.includes("bio")) mockSubject = "Science";
+
+  let mockClass = "10";
+  const classMatch = lowerTitle.match(/class\s*(\d+)/i);
+  if (classMatch) mockClass = classMatch[1]!;
+
+  return {
+    metadata: {
+      schoolName: "Delhi Public School",
+      examTitle: "Practice Assignment",
+      subject: mockSubject,
+      className: mockClass,
+      timeAllowed: Math.round(computedTotalMarks * 1.5).toString() + " Minutes",
+      totalMarks: computedTotalMarks,
+    },
+    sections,
+  };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -121,6 +144,14 @@ You MUST respond with ONLY a valid JSON object — no markdown, no explanation, 
 
 The JSON MUST match this exact structure:
 {
+  "metadata": {
+    "schoolName": "<infer from instructions/title or fallback to 'Delhi Public School'>",
+    "examTitle": "<infer exam type (e.g., 'Half Yearly Examination 2026-27', 'Class Test', 'Practice Worksheet')>",
+    "subject": "<infer subject intelligently from the topic/title (e.g., Algebra -> Mathematics, Photosynthesis -> Biology)>",
+    "className": "<infer class from instructions/title or fallback to 'VIII' or '10'>",
+    "timeAllowed": "<calculate reasonable time, e.g., '2 Hours' or '45 Minutes'>",
+    "totalMarks": <calculate exact sum of all generated question marks>
+  },
   "sections": [
     {
       "title": "Section A: <question type>",
@@ -139,10 +170,11 @@ The JSON MUST match this exact structure:
 }
 
 CRITICAL RULES:
-1. SECTIONS: Create EXACTLY ONE section per question type listed in the Requirements.
-2. SECTION TITLES: Use clean titles like "Section A: Short Answer Questions". Do NOT duplicate the word "Section" (e.g. avoid "Section A: Section A:"). Use consecutive letters (A, B, C...).
-3. QUESTION COUNTS & MARKS: You MUST generate the EXACT number of questions requested for each section. Each question MUST carry the EXACT marks specified.
-4. DO NOT NUMBER QUESTIONS: Leave the numbering out of the question string (e.g. use "Explain the..." instead of "1. Explain the..."). The frontend handles numbering.
+1. METADATA INFERENCE: You MUST synthesize and infer the "metadata" fields intelligently. Do NOT use generic placeholders like 'Final Examination' if you can infer better. If the topic is 'Linear Equations', subject is 'Mathematics'. Calculate "totalMarks" exactly by summing up all generated question marks.
+2. SECTIONS: Create EXACTLY ONE section per question type listed in the Requirements.
+3. SECTION TITLES: Use clean titles like "Section A: Short Answer Questions". Do NOT duplicate the word "Section" (e.g. avoid "Section A: Section A:"). Use consecutive letters (A, B, C...).
+4. QUESTION COUNTS & MARKS: You MUST generate the EXACT number of questions requested for each section. Each question MUST carry the EXACT marks specified.
+5. DO NOT NUMBER QUESTIONS: Leave the numbering out of the question string.
 5. ACADEMIC QUALITY:
    - Questions MUST be highly realistic, academic, and directly relevant to the topic and any additional instructions.
    - DO NOT use repetitive placeholder phrasing like "Briefly explain...".
@@ -159,10 +191,9 @@ CRITICAL RULES:
     const userPrompt = `Create a realistic academic examination paper for:
 
 Topic / Title: ${assignment.title}
-${assignment.instructions ? `Special Instructions (MUST FOLLOW): ${assignment.instructions}` : ""}
-Total Marks: ${assignment.totalMarks}
+${assignment.instructions ? `Additional User Instructions (MUST FOLLOW): ${assignment.instructions}` : ""}
 
-Requirements (one section per line):
+Question Requirements (one section per line):
 ${questionConfig}
 
 Generate the highest quality academic questions covering diverse aspects of the topic.

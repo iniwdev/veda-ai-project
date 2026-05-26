@@ -25,19 +25,19 @@ const styles = StyleSheet.create({
   header: {
     borderBottomWidth: 1.5,
     borderBottomColor: "#111827",
-    paddingBottom: 10,
-    marginBottom: 15,
+    paddingBottom: 6,
+    marginBottom: 8,
   },
   schoolName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 700,
     textAlign: "center",
     textTransform: "uppercase",
-    marginBottom: 3,
+    marginBottom: 2,
     color: "#111827",
   },
   subjectText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     textAlign: "center",
     marginBottom: 2,
@@ -47,13 +47,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 600,
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 6,
     color: "#374151",
   },
   metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 6,
   },
   metaText: {
     fontSize: 9,
@@ -96,25 +96,25 @@ const styles = StyleSheet.create({
   studentInfoLineLg: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 120,
+    width: 100,
   },
   studentInfoLineSm: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 60,
+    width: 50,
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   sectionHeader: {
     borderBottomWidth: 1,
     borderBottomColor: "#111827",
-    paddingBottom: 4,
-    marginBottom: 8,
-    marginTop: 6,
+    paddingBottom: 2,
+    marginBottom: 6,
+    marginTop: 4,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
     color: "#111827",
     textTransform: "uppercase",
@@ -127,11 +127,11 @@ const styles = StyleSheet.create({
   },
   questionRow: {
     flexDirection: "row",
-    marginBottom: 8,
+    marginBottom: 4,
     alignItems: "flex-start",
   },
   questionNumber: {
-    width: 20,
+    width: 18,
     fontSize: 9,
     fontWeight: 700,
     color: "#111827",
@@ -144,23 +144,23 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 9,
     color: "#111827",
-    lineHeight: 1.3,
+    lineHeight: 1.2,
   },
   difficultyText: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#4B5563",
     marginLeft: 4,
   },
   marksText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 700,
     color: "#111827",
-    marginLeft: 10,
+    marginLeft: 6,
   },
   footer: {
-    marginTop: 20,
+    marginTop: 15,
     textAlign: "center",
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 700,
     color: "#9CA3AF",
     textTransform: "uppercase",
@@ -219,21 +219,15 @@ interface AssessmentPDFDocumentProps {
 
 export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocumentProps) {
   let currentQuestionIndex = 1;
-  const totalMarks = assignment?.totalMarks || 100;
-  const timeAllowedStr = Math.round(totalMarks * 1.5).toString() + " Minutes";
 
-  // Attempt to parse metadata from instructions
-  const instr = assignment?.instructions || "";
-  const extract = (key: string, fallback: string) => {
-    const match = instr.match(new RegExp(`${key}\\s*:\\s*([^\\n,]+)`, "i"));
-    return match ? match[1].trim() : fallback;
-  };
-
-  const schoolName = extract("schoolName", "Delhi Public School");
-  const subjectName = extract("subjectName", "Final Examination");
-  const className = extract("class(?:Name)?", "Class 10");
-  const examTitle = extract("examTitle", assignment?.title || "Question Paper");
-  const timeAllowed = extract("timeAllowed", timeAllowedStr);
+  // Use AI-inferred metadata
+  const meta = paper?.metadata || {};
+  const schoolName = meta.schoolName || "Delhi Public School";
+  const subjectName = meta.subject || "General";
+  const className = meta.className || "Class 10";
+  const examTitle = meta.examTitle || "Question Paper";
+  const timeAllowed = meta.timeAllowed || "2 Hours";
+  const totalMarks = meta.totalMarks || assignment?.totalMarks || 100;
 
   const flatQuestions: Array<{ qNum: number; answer: string; solution: string }> = [];
   paper?.sections?.forEach((section: any) => {

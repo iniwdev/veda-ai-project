@@ -14,7 +14,17 @@ export const aiSectionSchema = z.object({
   questions: z.array(aiQuestionSchema).min(1),
 });
 
+export const aiPaperMetadataSchema = z.object({
+  schoolName: z.string(),
+  examTitle: z.string(),
+  subject: z.string(),
+  className: z.string(),
+  timeAllowed: z.string(),
+  totalMarks: z.number(),
+});
+
 export const aiGeneratedPaperSchema = z.object({
+  metadata: aiPaperMetadataSchema,
   sections: z.array(aiSectionSchema).min(1),
 });
 

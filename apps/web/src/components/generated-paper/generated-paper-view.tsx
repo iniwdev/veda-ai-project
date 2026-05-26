@@ -74,19 +74,14 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
   // Reset for actual rendering
   currentQuestionIndex = 1;
 
-  // Attempt to parse metadata from instructions (e.g. "schoolName: My School")
-  const instr = assignment?.instructions || "";
-  const extract = (key: string, fallback: string) => {
-    const match = instr.match(new RegExp(`${key}\\s*:\\s*([^\\n,]+)`, "i"));
-    return match ? match[1].trim() : fallback;
-  };
-
-  const schoolName = extract("schoolName", "Delhi Public School");
-  const subjectName = extract("subjectName", "Final Examination");
-  const className = extract("class(?:Name)?", "Class 10");
-  const examTitle = extract("examTitle", assignment?.title || "Question Paper");
-  const timeAllowed = extract("timeAllowed", "3 Hours");
-  const totalMarks = assignment?.totalMarks || 100;
+  // Attempt to parse metadata from AI generated paper
+  const meta = paper?.metadata || {};
+  const schoolName = meta.schoolName || "Delhi Public School";
+  const subjectName = meta.subject || "General";
+  const className = meta.className || "Class 10";
+  const examTitle = meta.examTitle || "Question Paper";
+  const timeAllowed = meta.timeAllowed || "2 Hours";
+  const totalMarks = meta.totalMarks || assignment?.totalMarks || 100;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#F5F5F0]">
@@ -119,43 +114,42 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
       </div>
 
       {/* Paper rendering area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 font-serif">
-        <div className="max-w-[850px] mx-auto bg-white shadow-sm border border-gray-300 min-h-[1056px] px-8 py-10">
+      <div className="flex-1 overflow-y-auto p-2 md:p-4 font-serif">
+        <div className="max-w-[800px] mx-auto bg-white shadow-sm border border-gray-300 min-h-[1056px] px-6 py-8">
           
           {/* Professional Exam Header */}
-          <div className="border-b-[2px] border-gray-900 pb-4 mb-6 text-center">
-            <h1 className="text-[20px] font-bold text-gray-900 uppercase tracking-wide mb-1">
+          <div className="border-b-[1.5px] border-gray-900 pb-3 mb-4 text-center">
+            <h1 className="text-[18px] font-bold text-gray-900 uppercase tracking-wide mb-1">
               {schoolName}
             </h1>
-            <h2 className="text-[16px] font-bold text-gray-800 uppercase">
+            <h2 className="text-[15px] font-bold text-gray-800 uppercase">
               {examTitle}
             </h2>
-            <h3 className="text-[14px] font-semibold text-gray-800 mt-1">
-              Subject: {subjectName} | {className.startsWith("Class") ? className : `Class ${className}`}
+            <h3 className="text-[13px] font-semibold text-gray-800 mt-0.5">
+              Subject: {subjectName} &nbsp;|&nbsp; {className.toUpperCase().startsWith("CLASS") ? className : `Class ${className}`}
             </h3>
 
-            <div className="flex items-center justify-between mt-4 text-[13px] font-bold text-gray-800">
-              <p>Time Allowed: {timeAllowed}</p>
+            <div className="flex items-center justify-between mt-3 text-[12px] font-bold text-gray-800 px-2">
+              <p>Time: {timeAllowed}</p>
               <p>Maximum Marks: {totalMarks}</p>
             </div>
             
-            <div className="mt-4 text-left border border-gray-300 p-3 bg-gray-50/50">
-              <ul className="list-disc list-inside text-[12px] text-gray-900 space-y-0.5 ml-1">
+            <div className="mt-3 text-left border border-gray-300 p-2 bg-gray-50/50">
+              <ul className="list-disc list-inside text-[11px] text-gray-900 space-y-0.5 ml-1">
                 <li>All questions are compulsory.</li>
                 <li>Read all questions carefully before answering.</li>
-                {assignment?.instructions && <li>{assignment.instructions}</li>}
               </ul>
             </div>
 
-            <div className="mt-4 text-left">
-              <div className="flex items-center justify-between text-[13px] text-gray-900">
+            <div className="mt-3 text-left">
+              <div className="flex items-center justify-between text-[12px] text-gray-900">
                 <div className="flex items-end gap-1">
                   <span className="font-semibold">Name:</span>
-                  <div className="border-b border-gray-500 w-48"></div>
+                  <div className="border-b border-gray-500 w-40"></div>
                 </div>
                 <div className="flex items-end gap-1">
                   <span className="font-semibold">Roll No:</span>
-                  <div className="border-b border-gray-500 w-24"></div>
+                  <div className="border-b border-gray-500 w-20"></div>
                 </div>
                 <div className="flex items-end gap-1">
                   <span className="font-semibold">Section:</span>
@@ -166,7 +160,7 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
           </div>
 
           {/* Sections */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4">
             {paper.sections.map((section: any, idx: number) => {
               const startIndex = currentQuestionIndex;
               currentQuestionIndex += section.questions.length;
@@ -184,27 +178,27 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
             })}
           </div>
 
-          <div className="mt-8 text-center text-[11px] font-bold text-gray-400 uppercase">
+          <div className="mt-6 text-center text-[10px] font-bold text-gray-400 uppercase">
             — End of Paper —
           </div>
 
           {/* Answer Key Section (Page Break ideally in print) */}
-          <div className="mt-12 border-t-[2px] border-gray-900 pt-8 print:break-before-page">
-            <h2 className="text-[18px] font-bold text-gray-900 uppercase text-center mb-6">
+          <div className="mt-8 border-t-[1.5px] border-gray-900 pt-6 print:break-before-page">
+            <h2 className="text-[16px] font-bold text-gray-900 uppercase text-center mb-4">
               ANSWER KEY & SOLUTIONS
             </h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {flatQuestions.map((fq) => (
-                <div key={fq.qNum} className="border-b border-gray-200 pb-4 last:border-0">
-                  <h3 className="text-[14px] font-bold text-gray-900 mb-1">Question {fq.qNum}</h3>
-                  <div className="bg-emerald-50/50 border border-emerald-100 rounded p-2 mb-2">
-                    <span className="text-[12px] font-bold text-emerald-800 block mb-0.5">Correct Answer:</span>
-                    <span className="text-[13px] text-gray-900">{fq.answer}</span>
+                <div key={fq.qNum} className="border-b border-gray-200 pb-3 last:border-0">
+                  <h3 className="text-[13px] font-bold text-gray-900 mb-1">Question {fq.qNum}</h3>
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded p-1.5 mb-1.5">
+                    <span className="text-[11px] font-bold text-emerald-800 block mb-0.5">Correct Answer:</span>
+                    <span className="text-[12px] text-gray-900">{fq.answer}</span>
                   </div>
-                  <div className="bg-gray-50 border border-gray-200 rounded p-2">
-                    <span className="text-[12px] font-bold text-gray-700 block mb-0.5">Solution / Explanation:</span>
-                    <span className="text-[13px] text-gray-800 leading-snug whitespace-pre-wrap">{fq.solution}</span>
+                  <div className="bg-gray-50 border border-gray-200 rounded p-1.5">
+                    <span className="text-[11px] font-bold text-gray-700 block mb-0.5">Solution / Explanation:</span>
+                    <span className="text-[12px] text-gray-800 leading-snug whitespace-pre-wrap">{fq.solution}</span>
                   </div>
                 </div>
               ))}

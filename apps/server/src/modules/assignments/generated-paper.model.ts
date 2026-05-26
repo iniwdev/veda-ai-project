@@ -14,8 +14,18 @@ export interface IGeneratedSection {
   questions: IGeneratedQuestion[];
 }
 
+export interface IGeneratedPaperMetadata {
+  schoolName: string;
+  examTitle: string;
+  subject: string;
+  className: string;
+  timeAllowed: string;
+  totalMarks: number;
+}
+
 export interface IGeneratedPaper extends Document {
   assignmentId: Types.ObjectId;
+  metadata: IGeneratedPaperMetadata;
   sections: IGeneratedSection[];
   createdAt: Date;
   updatedAt: Date;
@@ -35,9 +45,19 @@ const GeneratedSectionSchema = new Schema<IGeneratedSection>({
   questions: { type: [GeneratedQuestionSchema], required: true },
 });
 
+const GeneratedPaperMetadataSchema = new Schema<IGeneratedPaperMetadata>({
+  schoolName: { type: String, required: true },
+  examTitle: { type: String, required: true },
+  subject: { type: String, required: true },
+  className: { type: String, required: true },
+  timeAllowed: { type: String, required: true },
+  totalMarks: { type: Number, required: true },
+}, { _id: false });
+
 const GeneratedPaperSchema = new Schema<IGeneratedPaper>(
   {
     assignmentId: { type: Schema.Types.ObjectId, ref: "Assignment", required: true, index: true },
+    metadata: { type: GeneratedPaperMetadataSchema, required: true },
     sections: { type: [GeneratedSectionSchema], required: true },
   },
   {
