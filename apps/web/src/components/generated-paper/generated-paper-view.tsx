@@ -154,7 +154,7 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
 
       {/* Paper rendering area (Ultra-Compact Print-First Design) */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 font-serif print:p-0 print:overflow-visible">
-        <div className="max-w-[794px] mx-auto bg-white min-h-[1123px] px-8 py-10 shadow-sm border border-gray-300 print:shadow-none print:border-none print:max-w-none print:mx-0 print:px-6 print:py-6">
+        <div id="question-paper" className="max-w-[794px] mx-auto bg-white min-h-[1123px] px-8 py-10 shadow-sm border border-gray-300 print:shadow-none print:border-none print:max-w-none print:mx-0 print:px-6 print:py-6">
           
           {buildExamHeader(paperMeta)}
           
