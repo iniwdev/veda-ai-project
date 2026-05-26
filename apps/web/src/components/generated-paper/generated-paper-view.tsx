@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Printer, Share } from "lucide-react";
+import { ArrowLeft, Share } from "lucide-react";
 import { useAssignmentStore } from "@/store/assignment.store";
 import { apiClient } from "@/lib/api";
 import { PaperSection } from "./paper-section";
+import { ExportPdfButton } from "../pdf/export-pdf-button";
 import type { ApiResponse } from "@repo/types";
 
 interface GeneratedPaperViewProps {
@@ -85,10 +86,7 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
             <Share size={14} />
             Share
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#7B5EA7] text-white text-[12.5px] font-medium rounded-lg hover:bg-[#6A4D96] transition-colors shadow-sm">
-            <Printer size={14} />
-            Print Paper
-          </button>
+          <ExportPdfButton assignment={assignment} paper={paper} />
         </div>
       </div>
 
