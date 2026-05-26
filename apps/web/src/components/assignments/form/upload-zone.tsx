@@ -5,7 +5,11 @@ import { useFormContext } from "react-hook-form";
 import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
 
 export function UploadZone() {
-  const { setValue, watch, formState: { errors } } = useFormContext<CreateAssignmentFormValues>();
+  const {
+    setValue,
+    watch,
+    formState: { errors },
+  } = useFormContext<CreateAssignmentFormValues>();
   const [dragging, setDragging] = useState(false);
   const file = watch("file");
 
@@ -44,7 +48,12 @@ export function UploadZone() {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            <path d="M4 16h12" stroke={errors.file ? "#EF4444" : "#9CA3AF"} strokeWidth="1.5" strokeLinecap="round" />
+            <path
+              d="M4 16h12"
+              stroke={errors.file ? "#EF4444" : "#9CA3AF"}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
         </div>
         <p className={`text-[13px] font-medium ${errors.file ? "text-red-500" : "text-gray-500"}`}>
@@ -66,9 +75,7 @@ export function UploadZone() {
         </label>
       </div>
       {errors.file && (
-        <p className="text-red-500 text-xs mt-1 text-center">
-          {errors.file.message as string}
-        </p>
+        <p className="text-red-500 text-xs mt-1 text-center">{errors.file.message as string}</p>
       )}
       {!errors.file && (
         <p className="text-[11px] text-gray-400 text-center mt-2">

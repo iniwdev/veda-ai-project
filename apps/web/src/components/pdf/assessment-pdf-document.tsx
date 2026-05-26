@@ -1,18 +1,20 @@
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Font,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
 
 Font.register({
   family: "Inter",
   fonts: [
-    { src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyeMZhrib2Bg-4.ttf", fontWeight: 400 },
-    { src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYMZhrib2Bg-4.ttf", fontWeight: 600 },
-    { src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZhrib2Bg-4.ttf", fontWeight: 700 },
+    {
+      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyeMZhrib2Bg-4.ttf",
+      fontWeight: 400,
+    },
+    {
+      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYMZhrib2Bg-4.ttf",
+      fontWeight: 600,
+    },
+    {
+      src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZhrib2Bg-4.ttf",
+      fontWeight: 700,
+    },
   ],
 });
 
@@ -240,7 +242,8 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
   const className = meta.className || "Class 10";
   const examTitle = meta.examTitle || "HALF YEARLY EXAMINATION";
   const timeAllowed = meta.timeAllowed || "2 Hours";
-  const totalMarks = calculatedMarks > 0 ? calculatedMarks : (meta.totalMarks || assignment?.totalMarks || 100);
+  const totalMarks =
+    calculatedMarks > 0 ? calculatedMarks : meta.totalMarks || assignment?.totalMarks || 100;
 
   // Reset for actual rendering
   currentQuestionIndex = 1;
@@ -252,7 +255,10 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
         <View style={styles.header}>
           <Text style={styles.schoolName}>{schoolName}</Text>
           <Text style={styles.subjectText}>{examTitle}</Text>
-          <Text style={styles.classText}>Subject: {subjectName} | {className.startsWith("Class") ? className : `Class ${className}`}</Text>
+          <Text style={styles.classText}>
+            Subject: {subjectName} |{" "}
+            {className.startsWith("Class") ? className : `Class ${className}`}
+          </Text>
 
           <View style={styles.metaRow}>
             <Text style={styles.metaText}>Time Allowed: {timeAllowed}</Text>
@@ -262,7 +268,9 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
           <View style={styles.instructionsBox}>
             <Text style={styles.instructionTitle}>General Instructions:</Text>
             <Text style={styles.instructionItem}>• All questions are compulsory.</Text>
-            <Text style={styles.instructionItem}>• Read all questions carefully before answering.</Text>
+            <Text style={styles.instructionItem}>
+              • Read all questions carefully before answering.
+            </Text>
             <Text style={styles.instructionItem}>• Write neatly and legibly.</Text>
             {assignment?.instructions && (
               <Text style={styles.instructionItem}>• {assignment.instructions}</Text>
@@ -290,13 +298,9 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
           return (
             <View key={idx} style={styles.section} wrap={false}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>
-                  {section.title}
-                </Text>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
                 {section.instruction && (
-                  <Text style={styles.sectionInstruction}>
-                    Instruction: {section.instruction}
-                  </Text>
+                  <Text style={styles.sectionInstruction}>Instruction: {section.instruction}</Text>
                 )}
               </View>
 
@@ -307,12 +311,13 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
                     <View style={styles.questionContent}>
                       <Text style={styles.questionText}>
                         {q.question}
-                        <Text style={styles.difficultyText}> ({q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)})</Text>
+                        <Text style={styles.difficultyText}>
+                          {" "}
+                          ({q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)})
+                        </Text>
                       </Text>
                     </View>
-                    <Text style={styles.marksText}>
-                      [{q.marks}]
-                    </Text>
+                    <Text style={styles.marksText}>[{q.marks}]</Text>
                   </View>
                 );
               })}
@@ -328,14 +333,14 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
       {/* Answer Key Page(s) */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.answerKeyTitle}>ANSWER KEY & SOLUTIONS</Text>
-        
+
         {flatQuestions.map((fq) => (
           <View key={fq.qNum} style={styles.answerBox} wrap={false}>
             <Text style={styles.answerQNum}>Question {fq.qNum}</Text>
-            
+
             <Text style={styles.answerTextLabel}>Correct Answer:</Text>
             <Text style={styles.answerText}>{fq.answer}</Text>
-            
+
             <Text style={styles.solutionTextLabel}>Solution / Explanation:</Text>
             <Text style={styles.solutionText}>{fq.solution}</Text>
           </View>

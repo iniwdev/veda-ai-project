@@ -57,9 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <TopBar />
 
         {/* Dynamic content area — each view manages its own scroll */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {children}
-        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
       </div>
     </div>
   );

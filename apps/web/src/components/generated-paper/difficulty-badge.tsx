@@ -6,7 +6,9 @@ export function DifficultyBadge({ difficulty }: { difficulty: "easy" | "medium" 
   };
 
   return (
-    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border ${colors[difficulty]}`}>
+    <span
+      className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border ${colors[difficulty]}`}
+    >
       {difficulty}
     </span>
   );

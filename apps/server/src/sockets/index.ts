@@ -46,7 +46,9 @@ export function createSocketServer(httpServer: HttpServer, env: Env): SocketServ
 }
 
 export function publishAssignmentEvent(event: string, data: any): void {
-  import("../config/redis.js").then(({ redisConnection }) => {
-    redisConnection.publish("assignment-updates", JSON.stringify({ event, data }));
-  }).catch(console.error);
+  import("../config/redis.js")
+    .then(({ redisConnection }) => {
+      redisConnection.publish("assignment-updates", JSON.stringify({ event, data }));
+    })
+    .catch(console.error);
 }

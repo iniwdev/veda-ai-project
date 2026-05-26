@@ -8,19 +8,21 @@ interface PaperSectionProps {
   startIndex: number;
 }
 
-export function PaperSection({ sectionIndex, title, instruction, questions, startIndex }: PaperSectionProps) {
-  const sectionLabel = String.fromCharCode(65 + sectionIndex); // A, B, C...
-
+export function PaperSection({
+  sectionIndex: _sectionIndex,
+  title,
+  instruction,
+  questions,
+  startIndex,
+}: PaperSectionProps) {
+  // The AI already generates titles like "Section A: Short Questions".
+  // We render it directly to avoid double-prefixing (e.g. "Section A: Section A: ...").
   return (
     <div className="mb-4 last:mb-0">
       <div className="border-b border-gray-900 pb-0.5 mb-2">
-        <h2 className="text-[14px] font-bold text-gray-900 uppercase">
-          Section {sectionLabel}: {title}
-        </h2>
+        <h2 className="text-[14px] font-bold text-gray-900 uppercase">{title}</h2>
         {instruction && (
-          <p className="text-[11px] text-gray-700 mt-0.5 italic font-medium">
-            {instruction}
-          </p>
+          <p className="text-[11px] text-gray-700 mt-0.5 italic font-medium">{instruction}</p>
         )}
       </div>
 

@@ -14,17 +14,12 @@ export class AppError extends Error {
   }
 }
 
-export function errorHandler(
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
+export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ZodError) {
     const response: ApiResponse = {
       success: false,
       error: "Validation failed",
-      message: err.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", "),
+      message: err.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", "),
       timestamp: new Date().toISOString(),
     };
     res.status(400).json(response);
@@ -46,10 +41,7 @@ export function errorHandler(
 
   const response: ApiResponse = {
     success: false,
-    error:
-      process.env["NODE_ENV"] === "production"
-        ? "Internal server error"
-        : err.message,
+    error: process.env["NODE_ENV"] === "production" ? "Internal server error" : err.message,
     timestamp: new Date().toISOString(),
   };
 

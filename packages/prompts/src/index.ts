@@ -1,8 +1,4 @@
-import type {
-  DifficultyLevel,
-  QuestionType,
-  GenerationJobData,
-} from "@repo/types";
+import type { DifficultyLevel, QuestionType, GenerationJobData } from "@repo/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -45,14 +45,17 @@ const GeneratedSectionSchema = new Schema<IGeneratedSection>({
   questions: { type: [GeneratedQuestionSchema], required: true },
 });
 
-const GeneratedPaperMetadataSchema = new Schema<IGeneratedPaperMetadata>({
-  schoolName: { type: String, required: true },
-  examTitle: { type: String, required: true },
-  subject: { type: String, required: true },
-  className: { type: String, required: true },
-  timeAllowed: { type: String, required: true },
-  totalMarks: { type: Number, required: true },
-}, { _id: false });
+const GeneratedPaperMetadataSchema = new Schema<IGeneratedPaperMetadata>(
+  {
+    schoolName: { type: String, required: true },
+    examTitle: { type: String, required: true },
+    subject: { type: String, required: true },
+    className: { type: String, required: true },
+    timeAllowed: { type: String, required: true },
+    totalMarks: { type: Number, required: true },
+  },
+  { _id: false },
+);
 
 const GeneratedPaperSchema = new Schema<IGeneratedPaper>(
   {
@@ -62,7 +65,10 @@ const GeneratedPaperSchema = new Schema<IGeneratedPaper>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export const GeneratedPaperModel = mongoose.model<IGeneratedPaper>("GeneratedPaper", GeneratedPaperSchema);
+export const GeneratedPaperModel = mongoose.model<IGeneratedPaper>(
+  "GeneratedPaper",
+  GeneratedPaperSchema,
+);

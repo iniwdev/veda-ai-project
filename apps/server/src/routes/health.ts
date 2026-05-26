@@ -18,10 +18,8 @@ interface HealthStatus {
 }
 
 router.get("/health", (_req: Request, res: Response) => {
-  const mongoStatus =
-    mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-  const redisStatus =
-    redisConnection.status === "ready" ? "connected" : "disconnected";
+  const mongoStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+  const redisStatus = redisConnection.status === "ready" ? "connected" : "disconnected";
 
   const allHealthy = mongoStatus === "connected" && redisStatus === "connected";
 

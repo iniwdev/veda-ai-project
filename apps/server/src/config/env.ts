@@ -9,7 +9,7 @@ const envSchema = z.object({
   REDIS_HOST: z.string().default("localhost"),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),
   REDIS_PASSWORD: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),   // kept for reference, no longer used as primary
+  OPENAI_API_KEY: z.string().optional(), // kept for reference, no longer used as primary
   GROQ_API_KEY: z.string().min(1),
   GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
   JWT_SECRET: z.string().min(32),

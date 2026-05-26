@@ -12,7 +12,8 @@ import { GeneratedPaperView } from "@/components/generated-paper/generated-paper
 // Sidebar + TopBar never re-mount — they live in the parent layout.
 
 export default function AssignmentsPage() {
-  const { assignments, view, selectedAssignmentId, fetchAssignments, isLoading } = useAssignmentStore();
+  const { assignments, view, selectedAssignmentId, fetchAssignments, isLoading } =
+    useAssignmentStore();
 
   useEffect(() => {
     fetchAssignments();
@@ -27,7 +28,8 @@ export default function AssignmentsPage() {
   }
 
   if (view === "create") return <CreateAssignment />;
-  if (view === "view" && selectedAssignmentId) return <GeneratedPaperView assignmentId={selectedAssignmentId} />;
+  if (view === "view" && selectedAssignmentId)
+    return <GeneratedPaperView assignmentId={selectedAssignmentId} />;
 
   if (assignments.length === 0) return <EmptyState />;
 

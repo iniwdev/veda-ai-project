@@ -7,7 +7,7 @@ export class AssignmentController {
     try {
       const validated = createAssignmentSchema.parse(req);
       const assignment = await assignmentService.createAssignment(validated.body);
-      
+
       res.status(201).json({
         success: true,
         data: assignment,
@@ -35,7 +35,7 @@ export class AssignmentController {
     try {
       const id = req.params.id as string;
       const assignment = await assignmentService.getAssignmentById(id);
-      
+
       res.status(200).json({
         success: true,
         data: assignment,
@@ -50,7 +50,7 @@ export class AssignmentController {
     try {
       const id = req.params.id as string;
       await assignmentService.deleteAssignment(id);
-      
+
       res.status(200).json({
         success: true,
         message: "Assignment deleted successfully",
@@ -65,7 +65,7 @@ export class AssignmentController {
     try {
       const id = req.params.id as string;
       await assignmentService.generateAssignment(id);
-      
+
       res.status(202).json({
         success: true,
         message: "Assignment generation job enqueued",
@@ -80,7 +80,7 @@ export class AssignmentController {
     try {
       const id = req.params.id as string;
       const paper = await assignmentService.getPaper(id);
-      
+
       res.status(200).json({
         success: true,
         data: paper,

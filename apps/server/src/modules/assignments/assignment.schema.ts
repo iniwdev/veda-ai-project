@@ -19,14 +19,18 @@ export const QuestionRowSchema = z.object({
 
 export const createAssignmentSchema = z.object({
   body: z.object({
-    title: z.string().min(1, "Title is required").max(100),
+    title: z.string().min(1, "Title is required").max(200),
     dueDate: z.string().min(1, "Due date is required"),
     instructions: z.string().optional(),
     questions: z.array(QuestionRowSchema).min(1, "At least one question type is required"),
-    // In a real app with file uploads, this would be handled differently (e.g., S3 URL or GridFS ID).
-    // For now, we'll store it as a string if provided (e.g. base64 or just filename).
     uploadedFile: z.string().optional(),
     totalMarks: z.number().min(1),
+    // ── Explicit paper metadata (user-provided, injected verbatim into AI) ──
+    schoolName: z.string().optional(),
+    subject: z.string().optional(),
+    className: z.string().optional(),
+    examType: z.string().optional(),
+    duration: z.string().optional(),
   }),
 });
 

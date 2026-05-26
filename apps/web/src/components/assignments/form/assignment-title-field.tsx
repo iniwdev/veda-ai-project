@@ -4,7 +4,10 @@ import { useFormContext } from "react-hook-form";
 import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
 
 export function AssignmentTitleField() {
-  const { register, formState: { errors } } = useFormContext<CreateAssignmentFormValues>();
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<CreateAssignmentFormValues>();
 
   return (
     <div className="mb-5">
@@ -24,9 +27,7 @@ export function AssignmentTitleField() {
         />
       </div>
       {errors.assignmentTitle && (
-        <p className="text-red-500 text-xs mt-1">
-          {errors.assignmentTitle.message}
-        </p>
+        <p className="text-red-500 text-xs mt-1">{errors.assignmentTitle.message}</p>
       )}
     </div>
   );

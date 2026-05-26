@@ -11,6 +11,16 @@ export const QUESTION_TYPE_OPTIONS: QuestionType[] = [
   "Fill in the Blanks",
 ];
 
+export const EXAM_TYPE_OPTIONS = [
+  "Half Yearly Examination",
+  "Annual Examination",
+  "Unit Test",
+  "Class Test",
+  "Midterm Examination",
+  "Practice Worksheet",
+  "Pre-Board Examination",
+] as const;
+
 export const QuestionRowSchema = z.object({
   id: z.string(),
   type: z.enum([
@@ -27,11 +37,18 @@ export const QuestionRowSchema = z.object({
 });
 
 export const CreateAssignmentSchema = z.object({
-  assignmentTitle: z.string().min(1, "Assignment title is required").max(100, "Title is too long"),
-  dueDate: z.string().min(1, "Due date is required"), // basic string validation for DD-MM-YYYY format or similar
+  assignmentTitle: z.string().min(1, "Assignment title is required").max(200, "Title is too long"),
+  dueDate: z.string().min(1, "Due date is required"),
   questions: z.array(QuestionRowSchema).min(1, "At least one question type is required"),
   instructions: z.string().optional(),
-  file: z.any().optional(), // In a real app, this would be a File object
+  file: z.any().optional(),
+
+  // ── Paper Metadata Fields (user-provided, never AI-guessed) ──────────────
+  schoolName: z.string().optional(),
+  subject: z.string().optional(),
+  className: z.string().optional(),
+  examType: z.string().optional(),
+  duration: z.string().optional(),
 });
 
 export type CreateAssignmentFormValues = z.infer<typeof CreateAssignmentSchema>;

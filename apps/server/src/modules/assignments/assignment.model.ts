@@ -15,6 +15,12 @@ export interface IAssignment extends Document {
   questionConfigurations: IQuestionRow[];
   totalMarks: number;
   status: "draft" | "processing" | "generated" | "failed";
+  // ── Paper metadata (user-provided, verbatim in AI prompt) ───────────────
+  schoolName?: string;
+  subject?: string;
+  className?: string;
+  examType?: string;
+  duration?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,10 +46,16 @@ const AssignmentSchema = new Schema<IAssignment>(
       default: "draft",
       index: true,
     },
+    // ── Paper metadata fields ─────────────────────────────────
+    schoolName: { type: String },
+    subject: { type: String },
+    className: { type: String },
+    examType: { type: String },
+    duration: { type: String },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const AssignmentModel = mongoose.model<IAssignment>("Assignment", AssignmentSchema);

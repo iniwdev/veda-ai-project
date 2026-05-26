@@ -4,17 +4,17 @@ Production-grade monorepo for an AI-powered assessment generation platform.
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16 (App Router, Turbopack) |
-| Styling | Tailwind CSS v4 + shadcn/ui |
-| State | Zustand |
-| Backend | Express 5 + TypeScript |
-| Database | MongoDB 8 (Mongoose) |
-| Cache / Queue | Redis 7 + BullMQ |
-| Real-time | Socket.IO |
-| Runtime | Node.js 20 |
-| Package Manager | pnpm 10 (workspaces) |
+| Layer           | Technology                         |
+| --------------- | ---------------------------------- |
+| Frontend        | Next.js 16 (App Router, Turbopack) |
+| Styling         | Tailwind CSS v4 + shadcn/ui        |
+| State           | Zustand                            |
+| Backend         | Express 5 + TypeScript             |
+| Database        | MongoDB 8 (Mongoose)               |
+| Cache / Queue   | Redis 7 + BullMQ                   |
+| Real-time       | Socket.IO                          |
+| Runtime         | Node.js 20                         |
+| Package Manager | pnpm 10 (workspaces)               |
 
 ## Monorepo Structure
 
@@ -102,16 +102,16 @@ curl http://localhost:4000/api/v1/health | jq
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start all apps in parallel |
-| `pnpm build` | Build all packages + apps |
-| `pnpm lint` | Lint all packages |
-| `pnpm format` | Format all files with Prettier |
-| `pnpm type-check` | TypeScript check all packages |
-| `pnpm docker:up` | Start MongoDB + Redis |
-| `pnpm docker:down` | Stop Docker services |
-| `pnpm docker:logs` | Tail Docker logs |
+| Command            | Description                    |
+| ------------------ | ------------------------------ |
+| `pnpm dev`         | Start all apps in parallel     |
+| `pnpm build`       | Build all packages + apps      |
+| `pnpm lint`        | Lint all packages              |
+| `pnpm format`      | Format all files with Prettier |
+| `pnpm type-check`  | TypeScript check all packages  |
+| `pnpm docker:up`   | Start MongoDB + Redis          |
+| `pnpm docker:down` | Stop Docker services           |
+| `pnpm docker:logs` | Tail Docker logs               |
 
 ## Adding shadcn/ui Components
 
@@ -128,21 +128,21 @@ Or copy component source directly into `apps/web/src/components/ui/`.
 
 ### Backend (`apps/server/.env`)
 
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Server port (default: 4000) |
-| `MONGODB_URI` | MongoDB connection string |
-| `REDIS_HOST` | Redis host |
-| `REDIS_PORT` | Redis port |
-| `OPENAI_API_KEY` | OpenAI API key |
-| `JWT_SECRET` | JWT signing secret (min 32 chars) |
+| Variable         | Description                       |
+| ---------------- | --------------------------------- |
+| `PORT`           | Server port (default: 4000)       |
+| `MONGODB_URI`    | MongoDB connection string         |
+| `REDIS_HOST`     | Redis host                        |
+| `REDIS_PORT`     | Redis port                        |
+| `OPENAI_API_KEY` | OpenAI API key                    |
+| `JWT_SECRET`     | JWT signing secret (min 32 chars) |
 
 ### Frontend (`apps/web/.env.local`)
 
-| Variable | Description |
-|----------|-------------|
+| Variable              | Description          |
+| --------------------- | -------------------- |
 | `NEXT_PUBLIC_API_URL` | Backend API base URL |
-| `NEXT_PUBLIC_WS_URL` | WebSocket server URL |
+| `NEXT_PUBLIC_WS_URL`  | WebSocket server URL |
 
 ## Architecture Notes
 

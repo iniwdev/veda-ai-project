@@ -6,7 +6,15 @@ import { useAssignmentStore } from "@/store/assignment.store";
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 const PlusIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
@@ -28,13 +36,31 @@ const EmptyStateIllustration = () => (
     <ellipse cx="110" cy="100" rx="100" ry="80" fill="#e5e7eb" />
 
     {/* Small top-right document/card */}
-    <rect x="138" y="28" width="52" height="38" rx="6" fill="white" stroke="#d1d5db" strokeWidth="1" />
+    <rect
+      x="138"
+      y="28"
+      width="52"
+      height="38"
+      rx="6"
+      fill="white"
+      stroke="#d1d5db"
+      strokeWidth="1"
+    />
     <rect x="145" y="36" width="20" height="3" rx="1.5" fill="#d1d5db" />
     <rect x="145" y="43" width="28" height="3" rx="1.5" fill="#e5e7eb" />
     <rect x="145" y="50" width="24" height="3" rx="1.5" fill="#e5e7eb" />
 
     {/* Main document */}
-    <rect x="60" y="42" width="80" height="100" rx="8" fill="white" stroke="#d1d5db" strokeWidth="1" />
+    <rect
+      x="60"
+      y="42"
+      width="80"
+      height="100"
+      rx="8"
+      fill="white"
+      stroke="#d1d5db"
+      strokeWidth="1"
+    />
     {/* Document header bar */}
     <rect x="60" y="42" width="80" height="20" rx="8" fill="#f3f4f6" />
     <rect x="60" y="54" width="80" height="8" rx="0" fill="#f3f4f6" />
@@ -56,17 +82,44 @@ const EmptyStateIllustration = () => (
     {/* Red X circle (inside lens) */}
     <circle cx="128" cy="124" r="24" fill="#ef4444" />
     {/* White X */}
-    <line x1="119" y1="115" x2="137" y2="133" stroke="white" strokeWidth="4" strokeLinecap="round" />
-    <line x1="137" y1="115" x2="119" y2="133" stroke="white" strokeWidth="4" strokeLinecap="round" />
+    <line
+      x1="119"
+      y1="115"
+      x2="137"
+      y2="133"
+      stroke="white"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
+    <line
+      x1="137"
+      y1="115"
+      x2="119"
+      y2="133"
+      stroke="white"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
 
     {/* Magnifying glass handle */}
-    <line x1="157" y1="151" x2="172" y2="167" stroke="#9ca3af" strokeWidth="7" strokeLinecap="round" />
+    <line
+      x1="157"
+      y1="151"
+      x2="172"
+      y2="167"
+      stroke="#9ca3af"
+      strokeWidth="7"
+      strokeLinecap="round"
+    />
 
     {/* Sparkle — top left */}
     <path d="M50 72 L52 66 L54 72 L60 74 L54 76 L52 82 L50 76 L44 74 Z" fill="#c4b5fd" />
 
     {/* Sparkle — bottom left */}
-    <path d="M38 136 L39.5 131 L41 136 L46 137.5 L41 139 L39.5 144 L38 139 L33 137.5 Z" fill="#a78bfa" />
+    <path
+      d="M38 136 L39.5 131 L41 136 L46 137.5 L41 139 L39.5 144 L38 139 L33 137.5 Z"
+      fill="#a78bfa"
+    />
 
     {/* Small dots */}
     <circle cx="170" cy="60" r="4" fill="#c4b5fd" />
@@ -89,8 +142,8 @@ export const EmptyState: React.FC = () => {
             No assignments yet
           </h2>
           <p className="text-[13.5px] text-gray-500 leading-[1.65] mb-7">
-            Create your first assignment to start collecting and grading student submissions.
-            You can set up rubrics, define marking criteria, and let AI assist with grading.
+            Create your first assignment to start collecting and grading student submissions. You
+            can set up rubrics, define marking criteria, and let AI assist with grading.
           </p>
           <button
             onClick={navigateToCreate}

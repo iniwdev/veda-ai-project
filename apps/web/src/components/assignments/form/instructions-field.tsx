@@ -5,7 +5,10 @@ import { useFormContext } from "react-hook-form";
 import type { CreateAssignmentFormValues } from "@/lib/validations/assignment";
 
 export function InstructionsField() {
-  const { register, formState: { errors } } = useFormContext<CreateAssignmentFormValues>();
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<CreateAssignmentFormValues>();
   const [isRecording, setIsRecording] = useState(false);
 
   return (
@@ -13,9 +16,11 @@ export function InstructionsField() {
       <label className="block text-[12.5px] font-semibold text-gray-700 mb-2">
         Additional Information (For better output)
       </label>
-      <div className={`relative border rounded-xl overflow-hidden transition-colors ${
-        errors.instructions ? "border-red-400" : "border-gray-200"
-      }`}>
+      <div
+        className={`relative border rounded-xl overflow-hidden transition-colors ${
+          errors.instructions ? "border-red-400" : "border-gray-200"
+        }`}
+      >
         <textarea
           placeholder="e.g Generate a question paper for 3 hour exam duration..."
           rows={3}
@@ -45,9 +50,7 @@ export function InstructionsField() {
         </button>
       </div>
       {errors.instructions && (
-        <p className="text-red-500 text-xs mt-1">
-          {errors.instructions.message}
-        </p>
+        <p className="text-red-500 text-xs mt-1">{errors.instructions.message}</p>
       )}
     </div>
   );

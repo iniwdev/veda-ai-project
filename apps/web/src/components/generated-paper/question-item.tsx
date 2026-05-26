@@ -1,4 +1,3 @@
-
 interface QuestionItemProps {
   index: number;
   question: string;
@@ -20,9 +19,7 @@ export function QuestionItem({ index, question, difficulty, marks }: QuestionIte
           </span>
         </p>
       </div>
-      <div className="flex-shrink-0 text-[12px] font-bold text-gray-800">
-        [{marks}]
-      </div>
+      <div className="flex-shrink-0 text-[12px] font-bold text-gray-800">[{marks}]</div>
     </div>
   );
 }

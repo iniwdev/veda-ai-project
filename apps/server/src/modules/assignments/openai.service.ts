@@ -1,365 +1,529 @@
 /**
  * ai.service — Assessment generation via Groq (llama-3.3-70b-versatile).
  *
- * The exported class and singleton name are intentionally kept identical to
- * the old OpenAI service so the BullMQ worker requires no changes at all.
+ * Architecture: SECTION-BY-SECTION generation.
+ * Balances rate limits (30 RPM) and LLM template repetition.
+ * Each section gets its own API call with strict diversity rules.
  *
- * Groq free tier: https://console.groq.com — 14,400 req/day, no card required.
- * Model used: llama-3.3-70b-versatile (supports JSON mode, very fast).
+ * Fallback: If Groq rate limits or fails, it automatically falls back
+ * to OpenAI (gpt-4o-mini) to ensure generation always succeeds.
  */
 
 import Groq from "groq-sdk";
+import OpenAI from "openai";
 import { env } from "../../config/env.js";
 import type { IAssignment } from "./assignment.model.js";
-import { aiGeneratedPaperSchema, type AIGeneratedPaper } from "./generated-paper.schema.js";
+import { type AIGeneratedPaper } from "./generated-paper.schema.js";
 
 const groq = new Groq({ apiKey: env.GROQ_API_KEY });
+const openai = env.OPENAI_API_KEY ? new OpenAI({ apiKey: env.OPENAI_API_KEY }) : null;
 
-// ─── Permanent (non-retryable) error codes ────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const PERMANENT_STATUS_CODES = new Set([401, 403]);
+interface GeneratedQuestion {
+  question: string;
+  difficulty: "easy" | "medium" | "hard";
+  marks: number;
+  answer: string;
+  solution: string;
+}
 
-function isPermanentError(error: any): boolean {
+interface ResolvedMeta {
+  schoolName: string | null;
+  examTitle: string | null;
+  subject: string | null;
+  className: string | null;
+  timeAllowed: string | null;
+  totalMarks: number;
+}
+
+// ─── Error Classification ─────────────────────────────────────────────────────
+
+function isPermanentAuthError(error: any): boolean {
   const status: number = error?.status ?? error?.statusCode ?? 0;
   const code: string = error?.code ?? error?.error?.code ?? "";
   return (
-    PERMANENT_STATUS_CODES.has(status) ||
-    code === "invalid_api_key" ||
-    code === "account_deactivated" ||
-    status === 400 || status === 429 // Aggressively fallback to mock on ANY 400 (JSON validation) or 429 (Quota)
+    status === 401 || status === 403 || code === "invalid_api_key" || code === "account_deactivated"
   );
 }
 
-// ─── Mock Paper Generator (development / quota-exceeded fallback) ─────────────
+function isRateLimitError(error: any): boolean {
+  const status: number = error?.status ?? error?.statusCode ?? 0;
+  return status === 429;
+}
 
-function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
-  console.warn("[AI] Groq unavailable — using mock paper generator");
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  let computedTotalMarks = 0;
+// ─── Garbage Detection ────────────────────────────────────────────────────────
 
-  const sections = assignment.questionConfigurations.map((config, sectionIdx) => {
-    computedTotalMarks += config.numQuestions * config.marks;
-    const difficulties: Array<"easy" | "medium" | "hard"> = ["easy", "medium", "hard"];
+const GARBAGE_PATTERNS = [
+  /\bmodule\s*\d/i,
+  /\bfactor\s*\d/i,
+  /\baspect\s*\d/i,
+  /\bscenario\s*\d/i,
+  /\bperspective\s*\d/i,
+  /\bcore\s+structure/i,
+  /\bcore\s+elements/i,
+  /\bworkflow/i,
+  /\bmethodology\s+of/i,
+  /\bfundamentals\s+of\s+(quiz|test|exam|assignment)/i,
+  /\bquiz\s+of\b/i,
+  /\binitial\s+state\s+variable/i,
+  /\bapplication\s+domain\s*\d/i,
+  /\bcase\s+study\s*\d/i,
+];
 
-    const questions = Array.from({ length: config.numQuestions }, (_, i) => {
-      const difficulty = difficulties[i % difficulties.length]!;
-      let question: string;
-      let answer: string;
-      let solution: string;
+/** Returns true if any question in the array looks like template garbage. */
+function hasGarbageQuestion(questions: GeneratedQuestion[]): boolean {
+  return questions.some((q) => GARBAGE_PATTERNS.some((rx) => rx.test(q.question)));
+}
 
-      const analyzeVerbs = ["Analyze", "Evaluate", "Compare and contrast", "Discuss", "Explain", "Critique"];
-      const randomVerb = analyzeVerbs[i % analyzeVerbs.length];
-      const identifyVerbs = ["Define", "State", "Identify", "Outline"];
-      const randomIdentify = identifyVerbs[i % identifyVerbs.length];
+// ─── Duplicate Detection ──────────────────────────────────────────────────────
 
-      switch (config.type) {
-        case "Multiple Choice Questions":
-          question = `Q${i + 1}. In the context of ${assignment.title} (Concept ${i + 1}), which of the following is the most accurate statement?\n(A) It relies entirely on theoretical frameworks.\n(B) It requires empirical validation to be considered effective.\n(C) It is mutually exclusive to other paradigms.\n(D) It serves as a foundational component without practical application.`;
-          answer = "(B) It requires empirical validation to be considered effective.";
-          solution = "Option B is correct because empirical validation is a core requirement for establishing effectiveness in modern applications of this topic. Theoretical frameworks alone (A) are insufficient.";
-          break;
-        case "True/False":
-          question = `Q${i + 1}. True or False: The primary assumptions underlying ${assignment.title} (Perspective ${i + 1}) can be universally applied across all disciplines without modification.`;
-          answer = "False";
-          solution = "The assumptions cannot be universally applied; they must be adapted based on context and discipline-specific constraints.";
-          break;
-        case "Fill in the Blanks":
-          question = `Q${i + 1}. Fill in the blank: When approaching problems related to ${assignment.title} (Scenario ${i + 1}), the initial step often involves establishing a robust _______.`;
-          answer = "framework";
-          solution = "Establishing a robust framework provides the necessary structure to approach complex problems methodically.";
-          break;
-        case "Short Questions":
-          question = `Q${i + 1}. ${randomIdentify} the core elements of ${assignment.title} relating to Factor ${i + 1} and briefly describe their immediate impact on the system.`;
-          answer = "The core elements include structural integrity, dynamic adaptability, and efficiency.";
-          solution = "These elements immediately impact the system by increasing resilience to external shocks and improving overall throughput.";
-          break;
-        case "Long Answer Questions":
-          question = `Q${i + 1}. ${randomVerb} the theoretical and practical implications of ${assignment.title} with a focus on Case Study ${i + 1}. Support your arguments with relevant academic literature.`;
-          answer = "Theoretical implications involve shifting paradigms in understanding complex systems, while practical implications include improved implementation strategies in industry.";
-          solution = "A complete answer should discuss the historical context, cite at least two case studies (e.g., the 2021 Implementation Study), and critically evaluate the long-term benefits versus initial costs.";
-          break;
-        case "Diagram/Graph-Based Questions":
-          question = `Q${i + 1}. Draw a detailed schematic representing the workflow or core structure of ${assignment.title} (Module ${i + 1}). Clearly label all inputs, processes, and outputs.`;
-          answer = "The diagram should include 3 main components: Input layer, Processing node, and Output interface.";
-          solution = "Award marks as follows: 2 marks for correct structure, 2 marks for clear labeling of inputs/outputs, 1 mark for overall neatness and flow arrows.";
-          break;
-        case "Numerical Problems":
-          const val1 = (i + 1) * 15;
-          const val2 = (i + 1) * 7.5;
-          question = `Q${i + 1}. A system modeled on ${assignment.title} has an initial state variable of ${val1}. If it undergoes a transformation applying a factor of ${val2}, calculate the final output. Show all intermediate steps and formulas used.`;
-          answer = `${val1 * val2}`;
-          solution = `Step 1: Identify formula Output = Initial × Factor.\nStep 2: Substitute values: Output = ${val1} × ${val2}.\nStep 3: Calculate final result = ${val1 * val2}.`;
-          break;
-        default:
-          question = `Q${i + 1}. Regarding ${assignment.title} Aspect ${i + 1}: Examine the key challenges and propose potential solutions based on current literature.`;
-          answer = "Key challenges include resource limitation and scalability.";
-          solution = "Solutions proposed in literature focus on distributed processing and optimized resource allocation algorithms.";
-      }
+const STOP_WORDS = new Set([
+  "the",
+  "is",
+  "at",
+  "which",
+  "on",
+  "a",
+  "an",
+  "and",
+  "or",
+  "what",
+  "how",
+  "why",
+  "who",
+  "when",
+  "where",
+  "to",
+  "in",
+  "of",
+  "for",
+  "with",
+  "as",
+  "by",
+  "are",
+  "do",
+  "does",
+  "did",
+  "can",
+  "could",
+  "would",
+  "should",
+  "its",
+  "it",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "this",
+  "that",
+  "these",
+  "those",
+  "from",
+  "not",
+  "but",
+  "all",
+  "each",
+  "every",
+  "any",
+  "some",
+  "such",
+  "than",
+]);
 
-      return { question, difficulty, marks: config.marks, answer, solution };
-    });
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^\w\s]|_/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-    const sectionLetter = String.fromCharCode(65 + sectionIdx);
-    return {
-      title: `Section ${sectionLetter}: ${config.type}`,
-      instruction: `Answer all ${config.numQuestions} question${config.numQuestions > 1 ? "s" : ""} in this section. Each question carries ${config.marks} mark${config.marks > 1 ? "s" : ""}.`,
-      questions,
-    };
-  });
+function contentWords(s: string): string[] {
+  return normalize(s)
+    .split(" ")
+    .filter((w) => !STOP_WORDS.has(w) && w.length > 2);
+}
 
-  // Basic mock inference
-  const lowerTitle = assignment.title.toLowerCase();
-  let mockSubject = "General";
-  if (lowerTitle.includes("math") || lowerTitle.includes("algebra") || lowerTitle.includes("linear")) mockSubject = "Mathematics";
-  else if (lowerTitle.includes("science") || lowerTitle.includes("physics") || lowerTitle.includes("bio")) mockSubject = "Science";
+function jaccardSimilarity(a: string, b: string): number {
+  const w1 = new Set(contentWords(a));
+  const w2 = new Set(contentWords(b));
+  if (w1.size === 0 || w2.size === 0) return 0;
+  let intersection = 0;
+  for (const w of w1) if (w2.has(w)) intersection++;
+  const union = w1.size + w2.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
 
-  let mockClass = "10";
-  const classMatch = lowerTitle.match(/class\s*(\d+)/i);
-  if (classMatch) mockClass = classMatch[1]!;
-
-  return {
-    metadata: {
-      schoolName: "Delhi Public School",
-      examTitle: "Practice Assignment",
-      subject: mockSubject,
-      className: mockClass,
-      timeAllowed: Math.round(computedTotalMarks * 1.5).toString() + " Minutes",
-      totalMarks: computedTotalMarks,
-    },
-    sections,
-  };
+/** Check if any question in candidate array is too similar to global pool */
+function hasDuplicate(candidates: GeneratedQuestion[], pool: string[]): boolean {
+  for (const q of candidates) {
+    const norm = normalize(q.question);
+    for (const existing of pool) {
+      if (normalize(existing) === norm) return true;
+      if (jaccardSimilarity(q.question, existing) > 0.45) return true;
+    }
+  }
+  return false;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class OpenAIService {
   async generateAssessment(assignment: IAssignment): Promise<AIGeneratedPaper> {
-    const questionConfig = assignment.questionConfigurations
-      .map((q) => `- ${q.numQuestions} ${q.type} (${q.marks} mark${q.marks > 1 ? "s" : ""} each)`)
-      .join("\n");
+    const meta: ResolvedMeta = {
+      schoolName: assignment.schoolName?.trim() || null,
+      examTitle: assignment.examType?.trim() || null,
+      subject: assignment.subject?.trim() || null,
+      className: assignment.className?.trim() || null,
+      timeAllowed: assignment.duration?.trim() || null,
+      totalMarks: assignment.questionConfigurations.reduce(
+        (sum, q) => sum + q.numQuestions * q.marks,
+        0,
+      ),
+    };
 
-    const systemPrompt = `You are a senior academic professor creating a high-quality, university-level examination paper.
-You MUST respond with ONLY a valid JSON object — no markdown, no explanation, no code fences.
+    const resolvedSubject = meta.subject || this.inferSubject(assignment.title);
+    console.info(`[AI] ═══ Starting paper generation for "${assignment.title}" ═══`);
 
-The JSON MUST match this exact structure:
-{
-  "metadata": {
-    "schoolName": "<infer from instructions/title or fallback to 'Delhi Public School'>",
-    "examTitle": "<infer exam type (e.g., 'Half Yearly Examination 2026-27', 'Class Test', 'Practice Worksheet')>",
-    "subject": "<infer subject intelligently from the topic/title (e.g., Algebra -> Mathematics, Photosynthesis -> Biology)>",
-    "className": "<infer class from instructions/title or fallback to 'VIII' or '10'>",
-    "timeAllowed": "<calculate reasonable time, e.g., '2 Hours' or '45 Minutes'>",
-    "totalMarks": 40
-  },
-  "sections": [
-    {
-      "title": "Section A: <question type>",
-      "instruction": "Answer all questions in this section. Each question carries X marks.",
-      "questions": [
-        {
-          "question": "<full question text, do NOT include question numbers here>",
-          "difficulty": "easy" | "medium" | "hard",
-          "marks": <number>,
-          "answer": "<direct, concise correct answer>",
-          "solution": "<detailed step-by-step solution, explanation, or marking rubric>"
-        }
-      ]
-    }
-  ]
-}
+    const globalPool: string[] = [];
+    const sections: AIGeneratedPaper["sections"] = [];
 
-CRITICAL RULES:
-1. METADATA INFERENCE: You MUST synthesize and infer the "metadata" fields intelligently. Do NOT use generic placeholders like 'Final Examination'. If the topic is 'Linear Equations', subject is 'Mathematics'. For 'totalMarks', output the exact mathematical sum of all generated question marks as a NUMBER.
-2. SECTIONS: Create EXACTLY ONE section per question type listed in the Requirements.
-3. SECTION TITLES: Use clean titles like "Section A: Short Answer Questions". Do NOT duplicate the word "Section" (e.g. avoid "Section A: Section A:"). Use consecutive letters (A, B, C...).
-4. QUESTION COUNTS & MARKS: You MUST generate the EXACT number of questions requested for each section. Each question MUST carry the EXACT marks specified.
-5. DO NOT NUMBER QUESTIONS: Leave the numbering out of the question string.
-5. ACADEMIC QUALITY:
-   - Questions MUST be highly realistic, academic, and directly relevant to the topic and any additional instructions.
-   - DO NOT use repetitive placeholder phrasing like "Briefly explain...".
-   - Vary question verbs based on difficulty (e.g., Define, Explain, Compare, Analyze, Evaluate, Solve, Synthesize).
-   - For Multiple Choice Questions, provide 4 plausible academic options (A, B, C, D) formatted cleanly in the question string.
-   - For Numerical Problems, provide realistic numbers and scenarios.
-   - For Diagram/Graph questions, ask the student to draw, label, or interpret a specific process or structure.
-6. ANSWER KEY & SOLUTIONS:
-   - "answer" must be the final direct answer.
-   - "solution" must contain detailed steps (for numericals), conceptual explanations (for theory), or a marking rubric (for diagrams/long answers).
-7. difficulty MUST be strictly one of: "easy", "medium", "hard" (lowercase).
-8. ADHERE STRICTLY to any Special Instructions provided.
-9. UNIQUE QUESTIONS: EVERY SINGLE QUESTION MUST BE UNIQUE. Do NOT repeat concepts, wording, or questions across the paper.`;
+    for (let si = 0; si < assignment.questionConfigurations.length; si++) {
+      const config = assignment.questionConfigurations[si]!;
+      const sectionLetter = String.fromCharCode(65 + si);
+      const sectionTitle = `Section ${sectionLetter}: ${config.type}`;
 
-    const userPrompt = `Create a realistic academic examination paper for:
+      console.info(`[AI] ── ${sectionTitle}: generating ${config.numQuestions} question(s) ──`);
 
-Topic / Title: ${assignment.title}
-${assignment.instructions ? `Additional User Instructions (MUST FOLLOW): ${assignment.instructions}` : ""}
-
-Question Requirements (one section per line):
-${questionConfig}
-
-Generate the highest quality academic questions covering diverse aspects of the topic.
-Respond with ONLY the JSON object. Do not include any other text.`;
-
-    try {
-      console.info(`[AI] Calling Groq (${env.GROQ_MODEL}) for assignment "${assignment.title}"…`);
-
-      const response = await groq.chat.completions.create({
-        model: env.GROQ_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-        max_tokens: 4096,
+      const sectionQuestions = await this.generateSection({
+        topic: assignment.title,
+        subject: resolvedSubject,
+        className: meta.className || "",
+        instructions: assignment.instructions || "",
+        sectionType: config.type,
+        numQuestions: config.numQuestions,
+        marks: config.marks,
+        globalPool,
       });
 
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("Groq returned empty content");
+      // Add generated questions to global pool for future sections
+      for (const q of sectionQuestions) {
+        globalPool.push(q.question);
       }
 
-      console.info(`[AI] Groq responded (${content.length} chars). Parsing…`);
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(content);
-      } catch {
-        console.error("[AI] Failed to JSON.parse Groq response:", content.slice(0, 300));
-        throw new Error("Groq returned invalid JSON");
-      }
-
-      const validated = aiGeneratedPaperSchema.safeParse(parsed);
-      if (!validated.success) {
-        console.error("[AI] Zod validation failed:", validated.error.flatten());
-        throw new Error("Groq JSON did not match expected schema");
-      }
-
-      console.info(`[AI] Paper generated successfully — ${validated.data.sections.length} sections`);
-      
-      // Post-process to ensure all questions are strictly unique
-      const deduplicatedPaper = await this.deduplicateQuestions(validated.data, assignment.title);
-      
-      return deduplicatedPaper;
-    } catch (error: any) {
-      if (isPermanentError(error)) {
-        console.warn(`[AI] Permanent error (${error?.status ?? "unknown"}) — falling back to mock generator`);
-        return generateMockPaper(assignment);
-      }
-      console.error("[AI] Transient error:", error?.message ?? error);
-      throw error;
+      sections.push({
+        title: sectionTitle,
+        instruction: `Answer all ${config.numQuestions} question${config.numQuestions > 1 ? "s" : ""}. Each carries ${config.marks} mark${config.marks > 1 ? "s" : ""}.`,
+        questions: sectionQuestions,
+      });
     }
-  }
 
-  private async generateSingleQuestion(topic: string, sectionTitle: string, marks: number, existingQuestions: string[]) {
-    const prompt = `You are a strict academic evaluator. Generate a SINGLE completely unique question.
-Topic: "${topic}"
-Section/Type: "${sectionTitle}"
-Marks: ${marks}
-
-CRITICAL: Your question MUST NOT be similar to any of these existing questions:
-${existingQuestions.map((q) => `- ${q}`).join("\n")}
-
-Respond with ONLY a valid JSON object matching this schema:
-{
-  "question": "<unique question text>",
-  "difficulty": "easy" | "medium" | "hard",
-  "marks": ${marks},
-  "answer": "<direct, concise correct answer>",
-  "solution": "<detailed solution/explanation>"
-}`;
-
-    const response = await groq.chat.completions.create({
-      model: env.GROQ_MODEL,
-      messages: [{ role: "system", content: prompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.8, // higher temp for more randomness/uniqueness
-      max_tokens: 1024,
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) throw new Error("Empty response");
-
-    const parsed = JSON.parse(content);
     return {
-      question: parsed.question,
-      difficulty: parsed.difficulty || "medium",
-      marks: parsed.marks || marks,
-      answer: parsed.answer || "",
-      solution: parsed.solution || "",
+      metadata: {
+        schoolName: meta.schoolName ?? "Delhi Public School",
+        examTitle: meta.examTitle ?? "Examination",
+        subject: resolvedSubject,
+        className: meta.className ?? "X",
+        timeAllowed: meta.timeAllowed ?? `${Math.round(meta.totalMarks * 1.5)} Minutes`,
+        totalMarks: meta.totalMarks,
+      },
+      sections,
     };
   }
 
-  private async deduplicateQuestions(paper: AIGeneratedPaper, assignmentTitle: string): Promise<AIGeneratedPaper> {
-    const stopWords = new Set(["the", "is", "at", "which", "on", "a", "an", "and", "or", "what", "how", "why", "who", "when", "where", "to", "in", "of", "for", "with", "as", "by", "are", "do", "does", "did", "can", "could", "would", "should", "explain", "describe", "define", "briefly"]);
+  private async generateSection(ctx: {
+    topic: string;
+    subject: string;
+    className: string;
+    instructions: string;
+    sectionType: string;
+    numQuestions: number;
+    marks: number;
+    globalPool: string[];
+  }): Promise<GeneratedQuestion[]> {
+    const maxAttempts = 3;
 
-    const normalize = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/[^\w\s]|_/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .split(" ")
-        .filter((w) => !stopWords.has(w) && w.length > 2)
-        .join(" ");
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const questions = await this.callLLMWithRetry(ctx, attempt);
 
-    function calculateSimilarity(str1: string, str2: string): number {
-      const s1 = normalize(str1);
-      const s2 = normalize(str2);
-      if (!s1 || !s2) return 0;
-      if (s1 === s2) return 1;
+      if (hasGarbageQuestion(questions)) {
+        console.warn(`[AI]   ⚠ Attempt ${attempt}: garbage template detected, retrying section`);
+        if (attempt === maxAttempts) return questions;
+        continue;
+      }
 
-      const words1 = new Set(s1.split(" "));
-      const words2 = new Set(s2.split(" "));
-      let intersection = 0;
-      for (const w of words1) if (words2.has(w)) intersection++;
+      if (hasDuplicate(questions, ctx.globalPool)) {
+        console.warn(
+          `[AI]   ⚠ Attempt ${attempt}: duplicates detected against previous sections, retrying`,
+        );
+        if (attempt === maxAttempts) return questions;
+        continue;
+      }
 
-      const union = words1.size + words2.size - intersection;
-      return intersection / union;
+      return questions;
+    }
+    throw new Error("Failed to generate section after max attempts");
+  }
+
+  private async callLLMWithRetry(
+    ctx: {
+      topic: string;
+      subject: string;
+      className: string;
+      instructions: string;
+      sectionType: string;
+      numQuestions: number;
+      marks: number;
+      globalPool: string[];
+    },
+    qualityAttempt: number,
+  ): Promise<GeneratedQuestion[]> {
+    const maxRetries = 3;
+    let lastErr: any = null;
+
+    // First try Groq
+    for (let retry = 0; retry < maxRetries; retry++) {
+      try {
+        return await this.callGroqForSection(ctx, qualityAttempt);
+      } catch (err: any) {
+        lastErr = err;
+        if (isPermanentAuthError(err)) {
+          console.error(`[AI] ✗ Permanent Groq auth error.`);
+          break; // Break Groq loop, try OpenAI
+        }
+        if (isRateLimitError(err)) {
+          const waitMs = Math.min(2000 * Math.pow(2, retry), 8000);
+          console.warn(
+            `[AI]   Groq rate limited (429). Waiting ${waitMs}ms before retry ${retry + 1}/${maxRetries}…`,
+          );
+          await sleep(waitMs);
+          continue;
+        }
+        if (retry < 1) {
+          console.warn(`[AI]   Groq Error: ${err.message}. Retrying…`);
+          await sleep(1000);
+          continue;
+        }
+        break; // Break Groq loop, try OpenAI
+      }
     }
 
-    const uniqueQuestions: string[] = [];
-
-    for (const section of paper.sections) {
-      for (let i = 0; i < section.questions.length; i++) {
-        let q = section.questions[i];
-        if (!q) continue;
-        
-        let isDuplicate = false;
-
-        for (const existing of uniqueQuestions) {
-          // With stopwords removed, 0.45 is a strong indicator of semantic duplication
-          if (calculateSimilarity(q.question, existing) > 0.45) {
-            isDuplicate = true;
-            break;
-          }
-        }
-
-        if (isDuplicate) {
-          console.info(`[AI] Duplicate detected: "${q.question.substring(0, 40)}...". Regenerating...`);
-          try {
-            const newQ = await this.generateSingleQuestion(
-              assignmentTitle,
-              section.title,
-              q.marks,
-              uniqueQuestions
-            );
-            if (newQ && newQ.question) {
-              section.questions[i] = newQ as any;
-              uniqueQuestions.push(newQ.question);
-            } else {
-              uniqueQuestions.push(q.question);
-            }
-          } catch (err) {
-            console.error("[AI] Failed to regenerate single question, keeping original", err);
-            uniqueQuestions.push(q.question);
-          }
-        } else {
-          uniqueQuestions.push(q.question);
+    // Fallback to OpenAI if configured
+    if (openai) {
+      console.warn(`[AI] ⚠ Groq failed after retries. Falling back to OpenAI (gpt-4o-mini)…`);
+      for (let retry = 0; retry < 2; retry++) {
+        try {
+          return await this.callOpenAIForSection(ctx, qualityAttempt);
+        } catch (err: any) {
+          console.warn(`[AI]   OpenAI Error: ${err.message}. Retrying…`);
+          await sleep(1500);
         }
       }
     }
 
-    return paper;
+    throw new Error(`AI generation failed. Last Groq error: ${lastErr?.message || "Unknown"}`);
+  }
+
+  private buildPromptsForSection(
+    ctx: {
+      topic: string;
+      subject: string;
+      className: string;
+      instructions: string;
+      sectionType: string;
+      numQuestions: number;
+      marks: number;
+      globalPool: string[];
+    },
+    qualityAttempt: number,
+  ): { systemPrompt: string; userPrompt: string } {
+    const {
+      topic,
+      subject,
+      className,
+      instructions,
+      sectionType,
+      numQuestions,
+      marks,
+      globalPool,
+    } = ctx;
+
+    const exclusionBlock =
+      globalPool.length > 0
+        ? `\n══ ALREADY GENERATED (you MUST NOT repeat any of these topics) ══\n${globalPool.map((q, i) => `${i + 1}. ${q}`).join("\n")}\n`
+        : "";
+
+    const typeGuide: Record<string, string> = {
+      "Multiple Choice Questions":
+        "MCQs with 4 options labeled (A), (B), (C), (D) in the question text. Only ONE correct answer. Distractors must be plausible.",
+      "Short Questions": "Concise theory/application questions answerable in 2-5 sentences.",
+      "Long Answer Questions": "Detailed questions requiring a multi-paragraph response.",
+      "Numerical Problems":
+        "Calculation problems with specific numbers, units, and a step-by-step mathematical solution.",
+      "True/False":
+        "Clear factual statements to evaluate as True or False. Include the statement in the question text.",
+      "Fill in the Blanks":
+        "Statements with exactly one blank (use _______) testing a key technical term or concept.",
+      "Diagram/Graph-Based Questions":
+        "Ask the student to draw, label, or interpret a REAL diagram or graph relevant to the subject.",
+    };
+
+    const systemPrompt = `You are an experienced ${subject} teacher setting a real school examination paper${className ? ` for ${className}` : ""}.
+
+CRITICAL IDENTITY RULES:
+- You generate REAL exam questions that test ACTUAL ${subject} concepts (laws, theorems, formulas, real-world applications).
+- You write questions that would appear in a genuine school board exam.
+- You NEVER generate generic filler like "core elements of", "methodology of", "workflow", "module 1", "factor 1".
+
+BANNED PATTERNS (if your output contains any of these, it will be REJECTED):
+- "module [number]", "factor [number]", "aspect [number]"
+- "core structure", "core elements", "workflow", "methodology of"
+- "fundamentals of quiz", "application domain [number]"
+
+DIVERSITY RULE:
+You are generating ${numQuestions} questions for this section.
+EVERY SINGLE QUESTION MUST TEST A COMPLETELY DIFFERENT SUB-TOPIC AND CONCEPT.
+DO NOT REPEAT VERBS ("Define", "State", "Explain").
+
+Respond with ONLY a JSON object containing an array of questions:
+{
+  "questions": [
+    {
+      "question": "<real ${subject} exam question>",
+      "difficulty": "easy" | "medium" | "hard",
+      "marks": ${marks},
+      "answer": "<direct correct answer>",
+      "solution": "<step-by-step solution or explanation>"
+    }
+  ]
+}`;
+
+    const userPrompt = `Generate EXACTLY ${numQuestions} questions for the "${sectionType}" section.
+
+Subject: ${subject}
+Topic: ${topic}
+${instructions ? `Teacher's specific instructions: ${instructions}` : ""}
+Marks per question: ${marks}
+
+Format Guidelines:
+${typeGuide[sectionType] || `Generate high-quality ${subject} exam questions.`}
+${exclusionBlock}
+${qualityAttempt > 1 ? `\n⚠ IMPORTANT: This is retry #${qualityAttempt}. Generate COMPLETELY DIFFERENT questions.` : ""}`;
+
+    return { systemPrompt, userPrompt };
+  }
+
+  private async callGroqForSection(
+    ctx: {
+      topic: string;
+      subject: string;
+      className: string;
+      instructions: string;
+      sectionType: string;
+      numQuestions: number;
+      marks: number;
+      globalPool: string[];
+    },
+    qualityAttempt: number,
+  ): Promise<GeneratedQuestion[]> {
+    const { numQuestions, marks } = ctx;
+    const { systemPrompt, userPrompt } = this.buildPromptsForSection(ctx, qualityAttempt);
+
+    const response = await groq.chat.completions.create({
+      model: env.GROQ_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: Math.min(0.85 + qualityAttempt * 0.05, 1.0),
+      max_tokens: 2048,
+    });
+
+    return this.parseLLMResponse(response.choices[0]?.message?.content, numQuestions, marks);
+  }
+
+  private async callOpenAIForSection(
+    ctx: {
+      topic: string;
+      subject: string;
+      className: string;
+      instructions: string;
+      sectionType: string;
+      numQuestions: number;
+      marks: number;
+      globalPool: string[];
+    },
+    qualityAttempt: number,
+  ): Promise<GeneratedQuestion[]> {
+    if (!openai) throw new Error("OpenAI client not initialized");
+
+    const { numQuestions, marks } = ctx;
+    const { systemPrompt, userPrompt } = this.buildPromptsForSection(ctx, qualityAttempt);
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: Math.min(0.85 + qualityAttempt * 0.05, 1.0),
+      max_tokens: 2048,
+    });
+
+    return this.parseLLMResponse(response.choices[0]?.message?.content, numQuestions, marks);
+  }
+
+  private parseLLMResponse(
+    content: string | undefined | null,
+    numQuestions: number,
+    marks: number,
+  ): GeneratedQuestion[] {
+    if (!content) throw new Error("Empty LLM response");
+
+    const parsed = JSON.parse(content);
+    if (!Array.isArray(parsed.questions)) {
+      throw new Error("Invalid JSON structure: expected 'questions' array");
+    }
+
+    const questions: GeneratedQuestion[] = [];
+    for (const q of parsed.questions.slice(0, numQuestions)) {
+      questions.push({
+        question: String(q.question || "").trim(),
+        difficulty: (["easy", "medium", "hard"].includes(q.difficulty)
+          ? q.difficulty
+          : "medium") as GeneratedQuestion["difficulty"],
+        marks: Number(q.marks) || marks,
+        answer: String(q.answer || ""),
+        solution: String(q.solution || ""),
+      });
+    }
+
+    if (questions.length < numQuestions) {
+      throw new Error(`LLM returned ${questions.length} questions, expected ${numQuestions}`);
+    }
+
+    return questions;
+  }
+
+  private inferSubject(title: string): string {
+    const t = title.toLowerCase();
+    if (/math|algebra|calculus|geometry|trigonometry|equation/.test(t)) return "Mathematics";
+    if (/physics|mechanics|wave|optics|electr|magnetism|force/.test(t)) return "Physics";
+    if (/chem|reaction|bond|element|mole|acid|base/.test(t)) return "Chemistry";
+    if (/bio|cell|enzyme|genetics|ecology|evolution|respiration/.test(t)) return "Biology";
+    if (/history|revolution|empire|civilization|war|dynasty/.test(t)) return "History";
+    if (/english|grammar|literature|essay|poem|prose/.test(t)) return "English";
+    if (/computer|programming|algorithm|data|software/.test(t)) return "Computer Science";
+    return "General Studies";
   }
 }
 

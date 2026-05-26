@@ -39,8 +39,14 @@ function Counter({ value, onChange, min = 0 }: CounterProps) {
 // ─── Question Config Table ────────────────────────────────────────────────────
 
 export function QuestionConfigTable() {
-  const { control, register, setValue, watch, formState: { errors } } = useFormContext<CreateAssignmentFormValues>();
-  
+  const {
+    control,
+    register,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useFormContext<CreateAssignmentFormValues>();
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: "questions",
@@ -90,7 +96,9 @@ export function QuestionConfigTable() {
               <select
                 {...register(`questions.${index}.type`)}
                 className={`w-full appearance-none border rounded-lg px-3 py-2 text-[12.5px] text-gray-700 font-medium bg-white focus:outline-none pr-8 cursor-pointer transition-colors ${
-                  errors.questions?.[index]?.type ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"
+                  errors.questions?.[index]?.type
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-gray-200 focus:border-gray-400"
                 }`}
               >
                 {QUESTION_TYPE_OPTIONS.map((opt) => (
@@ -137,7 +145,9 @@ export function QuestionConfigTable() {
             <div className="flex-shrink-0">
               <Counter
                 value={watch(`questions.${index}.numQuestions`)}
-                onChange={(v) => setValue(`questions.${index}.numQuestions`, v, { shouldValidate: true })}
+                onChange={(v) =>
+                  setValue(`questions.${index}.numQuestions`, v, { shouldValidate: true })
+                }
                 min={1}
               />
             </div>
@@ -153,11 +163,9 @@ export function QuestionConfigTable() {
           </div>
         ))}
       </div>
-      
+
       {errors.questions && !Array.isArray(errors.questions) && (
-        <p className="text-red-500 text-xs mt-2">
-          {errors.questions.message}
-        </p>
+        <p className="text-red-500 text-xs mt-2">{errors.questions.message}</p>
       )}
 
       {/* Add question type button */}
@@ -179,9 +187,7 @@ export function QuestionConfigTable() {
         <span className="text-[12px] font-semibold text-gray-700">
           Total Questions : {totalQuestions}
         </span>
-        <span className="text-[12px] font-semibold text-gray-700">
-          Total Marks : {totalMarks}
-        </span>
+        <span className="text-[12px] font-semibold text-gray-700">Total Marks : {totalMarks}</span>
       </div>
     </div>
   );

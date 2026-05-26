@@ -48,21 +48,25 @@ export const useAssignmentStore = create<AssignmentState>()(
       createDraft: {},
 
       setCreateDraft: (draft) =>
-        set((state) => ({ createDraft: { ...state.createDraft, ...draft } }), false, "setCreateDraft"),
+        set(
+          (state) => ({ createDraft: { ...state.createDraft, ...draft } }),
+          false,
+          "setCreateDraft",
+        ),
 
       clearCreateDraft: () => set({ createDraft: {} }, false, "clearCreateDraft"),
 
-      setView: (view, assignmentId = null) => set({ view, selectedAssignmentId: assignmentId }, false, "setView"),
+      setView: (view, assignmentId = null) =>
+        set({ view, selectedAssignmentId: assignmentId }, false, "setView"),
 
-      setSearchQuery: (query) =>
-        set({ searchQuery: query }, false, "setSearchQuery"),
+      setSearchQuery: (query) => set({ searchQuery: query }, false, "setSearchQuery"),
 
       fetchAssignments: async () => {
         set({ isLoading: true, error: null }, false, "fetchAssignments/start");
         try {
           const res = await apiClient.get<ApiResponse<any[]>>("/assignments");
           const data = res.data || [];
-          
+
           // Map backend format to frontend format
           const mappedAssignments: Assignment[] = data.map((item) => ({
             id: item._id,
@@ -79,7 +83,7 @@ export const useAssignmentStore = create<AssignmentState>()(
               isLoading: false,
             },
             false,
-            "fetchAssignments/success"
+            "fetchAssignments/success",
           );
         } catch (err: any) {
           set({ error: err.message, isLoading: false }, false, "fetchAssignments/error");
@@ -89,29 +93,32 @@ export const useAssignmentStore = create<AssignmentState>()(
       addAssignment: (assignment) =>
         set(
           (state) => {
-            const next = [{ ...assignment, status: assignment.status || "draft" }, ...state.assignments];
+            const next = [
+              { ...assignment, status: assignment.status || "draft" },
+              ...state.assignments,
+            ];
             return {
               assignments: next,
               view: "list",
             };
           },
           false,
-          "addAssignment"
+          "addAssignment",
         ),
 
       updateAssignmentStatus: (id, status) =>
         set(
           (state) => ({
-            assignments: state.assignments.map(a => a.id === id ? { ...a, status } : a)
+            assignments: state.assignments.map((a) => (a.id === id ? { ...a, status } : a)),
           }),
           false,
-          "updateAssignmentStatus"
+          "updateAssignmentStatus",
         ),
 
       deleteAssignment: async (id) => {
         // Optimistic delete
         const prevAssignments = get().assignments;
-        
+
         set(
           (state) => {
             const next = state.assignments.filter((a) => a.id !== id);
@@ -121,14 +128,18 @@ export const useAssignmentStore = create<AssignmentState>()(
             };
           },
           false,
-          "deleteAssignment/optimistic"
+          "deleteAssignment/optimistic",
         );
 
         try {
           await apiClient.delete(`/assignments/${id}`);
         } catch (err) {
           // Revert on failure
-          set({ assignments: prevAssignments, view: prevAssignments.length > 0 ? "list" : "empty" }, false, "deleteAssignment/revert");
+          set(
+            { assignments: prevAssignments, view: prevAssignments.length > 0 ? "list" : "empty" },
+            false,
+            "deleteAssignment/revert",
+          );
           throw err;
         }
       },
@@ -137,11 +148,7 @@ export const useAssignmentStore = create<AssignmentState>()(
 
       cancelCreate: () => {
         const { assignments } = get();
-        set(
-          { view: assignments.length > 0 ? "list" : "empty" },
-          false,
-          "cancelCreate",
-        );
+        set({ view: assignments.length > 0 ? "list" : "empty" }, false, "cancelCreate");
       },
     }),
     { name: "AssignmentStore" },

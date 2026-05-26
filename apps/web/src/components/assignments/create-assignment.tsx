@@ -15,6 +15,7 @@ import { AssignmentTitleField } from "./form/assignment-title-field";
 import { DueDateField } from "./form/due-date-field";
 import { QuestionConfigTable } from "./form/question-config-table";
 import { InstructionsField } from "./form/instructions-field";
+import { PaperMetadataFields } from "./form/paper-metadata-fields";
 
 // ─── Step Indicator ───────────────────────────────────────────────────────────
 
@@ -55,6 +56,12 @@ export function CreateAssignment() {
             ],
       instructions: createDraft.instructions || "",
       file: createDraft.file || undefined,
+      // Paper metadata defaults — preserve draft if set
+      schoolName: createDraft.schoolName || "",
+      subject: createDraft.subject || "",
+      className: createDraft.className || "",
+      examType: createDraft.examType || "",
+      duration: createDraft.duration || "",
     },
   });
 
@@ -82,6 +89,12 @@ export function CreateAssignment() {
         questions: data.questions,
         totalMarks: data.questions.reduce((sum, q) => sum + q.numQuestions * q.marks, 0),
         uploadedFile: data.file ? "uploaded-file-placeholder" : undefined,
+        // Explicit paper metadata — passed verbatim into AI prompt
+        schoolName: data.schoolName?.trim() || undefined,
+        subject: data.subject?.trim() || undefined,
+        className: data.className?.trim() || undefined,
+        examType: data.examType?.trim() || undefined,
+        duration: data.duration?.trim() || undefined,
       });
 
       if (!res.data) {
@@ -117,13 +130,11 @@ export function CreateAssignment() {
       // ── Step 4: Trigger AI generation (fire-and-forget from client side) ──
       // We do this AFTER navigation so the user immediately sees the card.
       // The socket events will update the card status in real time.
-      apiClient
-        .post(`/assignments/${assignmentId}/generate`, {})
-        .catch((err: any) => {
-          // Generation trigger failed — update store to reflect this
-          useAssignmentStore.getState().updateAssignmentStatus(assignmentId, "failed");
-          toast.error(err.message || "Failed to start generation");
-        });
+      apiClient.post(`/assignments/${assignmentId}/generate`, {}).catch((err: any) => {
+        // Generation trigger failed — update store to reflect this
+        useAssignmentStore.getState().updateAssignmentStatus(assignmentId, "failed");
+        toast.error(err.message || "Failed to start generation");
+      });
     } catch (error: any) {
       toast.error(error.message || "Failed to create assignment");
     }
@@ -156,9 +167,7 @@ export function CreateAssignment() {
             {/* Form card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-7 py-5">
-                <h2 className="text-[14px] font-bold text-gray-900 mb-1">
-                  Assignment Details
-                </h2>
+                <h2 className="text-[14px] font-bold text-gray-900 mb-1">Assignment Details</h2>
                 <p className="text-[11.5px] text-gray-400 mb-5">
                   Basic information about your assignment
                 </p>
@@ -167,6 +176,13 @@ export function CreateAssignment() {
                 <AssignmentTitleField />
                 <DueDateField />
                 <QuestionConfigTable />
+
+                {/* ── Paper Metadata ─────────────────────────────────────── */}
+                <div className="mt-6 pt-5 border-t border-gray-100">
+                  <h3 className="text-[13px] font-bold text-gray-800 mb-1">Paper Header Details</h3>
+                  <PaperMetadataFields />
+                </div>
+
                 <InstructionsField />
               </div>
             </div>
@@ -182,7 +198,13 @@ export function CreateAssignment() {
             disabled={isSubmitting}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M9 11L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M9 11L5 7L9 3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             Previous
           </button>
@@ -194,7 +216,13 @@ export function CreateAssignment() {
             {isSubmitting ? "Creating..." : "Create & Generate"}
             {!isSubmitting && (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M5 3L9 7L5 11" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M5 3L9 7L5 11"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             )}
           </button>

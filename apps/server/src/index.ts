@@ -52,7 +52,9 @@ async function bootstrap(): Promise<void> {
 
   httpServer.listen(env.PORT, () => {
     console.info(`🚀 Server running on http://localhost:${env.PORT.toString()}`);
-    console.info(`📡 Health check: http://localhost:${env.PORT.toString()}${env.API_PREFIX}/health`);
+    console.info(
+      `📡 Health check: http://localhost:${env.PORT.toString()}${env.API_PREFIX}/health`,
+    );
     console.info(`🌍 Environment: ${env.NODE_ENV}`);
   });
 
