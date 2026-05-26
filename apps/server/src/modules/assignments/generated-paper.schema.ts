@@ -4,6 +4,8 @@ export const aiQuestionSchema = z.object({
   question: z.string().min(1),
   difficulty: z.enum(["easy", "medium", "hard"]),
   marks: z.number().min(1),
+  answer: z.string(),
+  solution: z.string(),
 });
 
 export const aiSectionSchema = z.object({

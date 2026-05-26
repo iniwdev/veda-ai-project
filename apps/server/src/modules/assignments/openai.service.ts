@@ -36,15 +36,14 @@ function isPermanentError(error: any): boolean {
 function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
   console.warn("[AI] Groq unavailable — using mock paper generator");
 
-  let globalQuestionIndex = 1;
-
   const sections = assignment.questionConfigurations.map((config, sectionIdx) => {
     const difficulties: Array<"easy" | "medium" | "hard"> = ["easy", "medium", "hard"];
 
     const questions = Array.from({ length: config.numQuestions }, (_, i) => {
       const difficulty = difficulties[i % difficulties.length]!;
-      const qNum = globalQuestionIndex++;
       let question: string;
+      let answer: string;
+      let solution: string;
 
       const analyzeVerbs = ["Analyze", "Evaluate", "Compare and contrast", "Discuss", "Explain", "Critique"];
       const randomVerb = analyzeVerbs[i % analyzeVerbs.length];
@@ -53,33 +52,49 @@ function generateMockPaper(assignment: IAssignment): AIGeneratedPaper {
 
       switch (config.type) {
         case "Multiple Choice Questions":
-          question = `${qNum}. In the context of ${assignment.title}, which of the following is the most accurate statement?\n   (A) It relies entirely on theoretical frameworks.\n   (B) It requires empirical validation to be considered effective.\n   (C) It is mutually exclusive to other paradigms.\n   (D) It serves as a foundational component without practical application.`;
+          question = `In the context of ${assignment.title}, which of the following is the most accurate statement?\n(A) It relies entirely on theoretical frameworks.\n(B) It requires empirical validation to be considered effective.\n(C) It is mutually exclusive to other paradigms.\n(D) It serves as a foundational component without practical application.`;
+          answer = "(B) It requires empirical validation to be considered effective.";
+          solution = "Option B is correct because empirical validation is a core requirement for establishing effectiveness in modern applications of this topic. Theoretical frameworks alone (A) are insufficient.";
           break;
         case "True/False":
-          question = `${qNum}. True or False: The primary assumptions underlying ${assignment.title} can be universally applied across all disciplines without modification.`;
+          question = `True or False: The primary assumptions underlying ${assignment.title} can be universally applied across all disciplines without modification.`;
+          answer = "False";
+          solution = "The assumptions cannot be universally applied; they must be adapted based on context and discipline-specific constraints.";
           break;
         case "Fill in the Blanks":
-          question = `${qNum}. Fill in the blank: When approaching problems related to ${assignment.title}, the initial step often involves establishing a robust _______.`;
+          question = `Fill in the blank: When approaching problems related to ${assignment.title}, the initial step often involves establishing a robust _______.`;
+          answer = "framework";
+          solution = "Establishing a robust framework provides the necessary structure to approach complex problems methodically.";
           break;
         case "Short Questions":
-          question = `${qNum}. ${randomIdentify} the core elements of ${assignment.title} and briefly describe their immediate impact on the system.`;
+          question = `${randomIdentify} the core elements of ${assignment.title} and briefly describe their immediate impact on the system.`;
+          answer = "The core elements include structural integrity, dynamic adaptability, and efficiency.";
+          solution = "These elements immediately impact the system by increasing resilience to external shocks and improving overall throughput.";
           break;
         case "Long Answer Questions":
-          question = `${qNum}. ${randomVerb} the theoretical and practical implications of ${assignment.title}. Support your arguments with real-world case studies and relevant academic literature.`;
+          question = `${randomVerb} the theoretical and practical implications of ${assignment.title}. Support your arguments with real-world case studies and relevant academic literature.`;
+          answer = "Theoretical implications involve shifting paradigms in understanding complex systems, while practical implications include improved implementation strategies in industry.";
+          solution = "A complete answer should discuss the historical context, cite at least two case studies (e.g., the 2021 Implementation Study), and critically evaluate the long-term benefits versus initial costs.";
           break;
         case "Diagram/Graph-Based Questions":
-          question = `${qNum}. Draw a detailed schematic representing the workflow or core structure of ${assignment.title}. Clearly label all inputs, processes, and outputs.`;
+          question = `Draw a detailed schematic representing the workflow or core structure of ${assignment.title}. Clearly label all inputs, processes, and outputs.`;
+          answer = "The diagram should include 3 main components: Input layer, Processing node, and Output interface.";
+          solution = "Award marks as follows: 2 marks for correct structure, 2 marks for clear labeling of inputs/outputs, 1 mark for overall neatness and flow arrows.";
           break;
         case "Numerical Problems":
           const val1 = (i + 1) * 15;
           const val2 = (i + 1) * 7.5;
-          question = `${qNum}. A system modeled on ${assignment.title} has an initial state variable of ${val1}. If it undergoes a transformation applying a factor of ${val2}, calculate the final output. Show all intermediate steps and formulas used.`;
+          question = `A system modeled on ${assignment.title} has an initial state variable of ${val1}. If it undergoes a transformation applying a factor of ${val2}, calculate the final output. Show all intermediate steps and formulas used.`;
+          answer = `${val1 * val2}`;
+          solution = `Step 1: Identify formula Output = Initial × Factor.\nStep 2: Substitute values: Output = ${val1} × ${val2}.\nStep 3: Calculate final result = ${val1 * val2}.`;
           break;
         default:
-          question = `${qNum}. Regarding ${assignment.title}: Examine the key challenges and propose potential solutions based on current literature.`;
+          question = `Regarding ${assignment.title}: Examine the key challenges and propose potential solutions based on current literature.`;
+          answer = "Key challenges include resource limitation and scalability.";
+          solution = "Solutions proposed in literature focus on distributed processing and optimized resource allocation algorithms.";
       }
 
-      return { question, difficulty, marks: config.marks };
+      return { question, difficulty, marks: config.marks, answer, solution };
     });
 
     const sectionLetter = String.fromCharCode(65 + sectionIdx);
@@ -112,9 +127,11 @@ The JSON MUST match this exact structure:
       "instruction": "Answer all questions in this section. Each question carries X marks.",
       "questions": [
         {
-          "question": "<full question text, including numbering>",
+          "question": "<full question text, do NOT include question numbers here>",
           "difficulty": "easy" | "medium" | "hard",
-          "marks": <number>
+          "marks": <number>,
+          "answer": "<direct, concise correct answer>",
+          "solution": "<detailed step-by-step solution, explanation, or marking rubric>"
         }
       ]
     }
@@ -125,20 +142,24 @@ CRITICAL RULES:
 1. SECTIONS: Create EXACTLY ONE section per question type listed in the Requirements.
 2. SECTION TITLES: Use clean titles like "Section A: Short Answer Questions". Do NOT duplicate the word "Section" (e.g. avoid "Section A: Section A:"). Use consecutive letters (A, B, C...).
 3. QUESTION COUNTS & MARKS: You MUST generate the EXACT number of questions requested for each section. Each question MUST carry the EXACT marks specified.
-4. NUMBERING: Number questions continuously across the ENTIRE paper (e.g., 1, 2, 3, 4, 5...) or within sections. Make sure the number is included in the question text.
+4. DO NOT NUMBER QUESTIONS: Leave the numbering out of the question string (e.g. use "Explain the..." instead of "1. Explain the..."). The frontend handles numbering.
 5. ACADEMIC QUALITY:
-   - Questions MUST be highly realistic, academic, and directly relevant to the topic.
+   - Questions MUST be highly realistic, academic, and directly relevant to the topic and any additional instructions.
    - DO NOT use repetitive placeholder phrasing like "Briefly explain...".
    - Vary question verbs based on difficulty (e.g., Define, Explain, Compare, Analyze, Evaluate, Solve, Synthesize).
-   - For Multiple Choice Questions, provide 4 plausible academic options (A, B, C, D) formatted nicely.
-   - For Numerical Problems, provide realistic numbers and scenarios to calculate.
+   - For Multiple Choice Questions, provide 4 plausible academic options (A, B, C, D) formatted cleanly in the question string.
+   - For Numerical Problems, provide realistic numbers and scenarios.
    - For Diagram/Graph questions, ask the student to draw, label, or interpret a specific process or structure.
-6. difficulty MUST be strictly one of: "easy", "medium", "hard" (lowercase).`;
+6. ANSWER KEY & SOLUTIONS:
+   - "answer" must be the final direct answer.
+   - "solution" must contain detailed steps (for numericals), conceptual explanations (for theory), or a marking rubric (for diagrams/long answers).
+7. difficulty MUST be strictly one of: "easy", "medium", "hard" (lowercase).
+8. ADHERE STRICTLY to any Special Instructions provided.`;
 
     const userPrompt = `Create a realistic academic examination paper for:
 
 Topic / Title: ${assignment.title}
-${assignment.instructions ? `Special Instructions: ${assignment.instructions}` : ""}
+${assignment.instructions ? `Special Instructions (MUST FOLLOW): ${assignment.instructions}` : ""}
 Total Marks: ${assignment.totalMarks}
 
 Requirements (one section per line):
@@ -185,18 +206,14 @@ Respond with ONLY the JSON object. Do not include any other text.`;
       console.info(`[AI] Paper generated successfully — ${validated.data.sections.length} sections`);
       return validated.data;
     } catch (error: any) {
-      // ── Permanent errors → fall back to deterministic mock ────────────────
       if (isPermanentError(error)) {
         console.warn(`[AI] Permanent error (${error?.status ?? "unknown"}) — falling back to mock generator`);
         return generateMockPaper(assignment);
       }
-
-      // ── Transient errors → re-throw (BullMQ logs it, job marked failed) ──
       console.error("[AI] Transient error:", error?.message ?? error);
       throw error;
     }
   }
 }
 
-// Singleton — same name as before so worker import is unchanged
 export const openaiService = new OpenAIService();

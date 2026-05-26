@@ -4,6 +4,8 @@ export interface IGeneratedQuestion {
   question: string;
   difficulty: "easy" | "medium" | "hard";
   marks: number;
+  answer: string;
+  solution: string;
 }
 
 export interface IGeneratedSection {
@@ -23,6 +25,8 @@ const GeneratedQuestionSchema = new Schema<IGeneratedQuestion>({
   question: { type: String, required: true },
   difficulty: { type: String, enum: ["easy", "medium", "hard"], required: true },
   marks: { type: Number, required: true },
+  answer: { type: String, required: true },
+  solution: { type: String, required: true },
 });
 
 const GeneratedSectionSchema = new Schema<IGeneratedSection>({

@@ -18,41 +18,70 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    padding: 50,
+    padding: 40,
     fontFamily: "Inter",
     backgroundColor: "#ffffff",
   },
   header: {
     borderBottomWidth: 2,
     borderBottomColor: "#111827",
-    paddingBottom: 20,
+    paddingBottom: 15,
     marginBottom: 20,
   },
-  title: {
-    fontSize: 20,
+  schoolName: {
+    fontSize: 16,
     fontWeight: 700,
     textAlign: "center",
     textTransform: "uppercase",
-    marginBottom: 10,
+    marginBottom: 4,
     color: "#111827",
-    letterSpacing: 2,
+  },
+  subjectText: {
+    fontSize: 14,
+    fontWeight: 700,
+    textAlign: "center",
+    marginBottom: 2,
+    color: "#1F2937",
+  },
+  classText: {
+    fontSize: 12,
+    fontWeight: 600,
+    textAlign: "center",
+    marginBottom: 15,
+    color: "#374151",
   },
   metaRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 30,
-    marginBottom: 20,
+    justifyContent: "space-between",
+    marginBottom: 15,
   },
   metaText: {
     fontSize: 10,
-    color: "#4B5563",
+    fontWeight: 700,
+    color: "#111827",
+  },
+  instructionsBox: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    padding: 10,
+    marginBottom: 15,
+    backgroundColor: "#F9FAFB",
+  },
+  instructionTitle: {
+    fontSize: 10,
+    fontWeight: 700,
+    marginBottom: 5,
+    color: "#111827",
+  },
+  instructionItem: {
+    fontSize: 9,
+    color: "#374151",
+    marginBottom: 3,
   },
   studentInfoArea: {
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 15,
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 10,
   },
   studentInfoField: {
     flexDirection: "row",
@@ -60,19 +89,19 @@ const styles = StyleSheet.create({
   },
   studentInfoLabel: {
     fontSize: 10,
-    fontWeight: 600,
+    fontWeight: 700,
     marginRight: 5,
     color: "#1F2937",
   },
-  studentInfoLine: {
+  studentInfoLineLg: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 150,
+    width: 140,
   },
-  studentInfoLineSmall: {
+  studentInfoLineSm: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
-    width: 100,
+    width: 80,
   },
   section: {
     marginBottom: 25,
@@ -82,6 +111,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#111827",
     paddingBottom: 5,
     marginBottom: 10,
+    marginTop: 10,
   },
   sectionTitle: {
     fontSize: 12,
@@ -114,35 +144,6 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     lineHeight: 1.4,
   },
-  badgesRow: {
-    flexDirection: "row",
-    marginTop: 4,
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    fontSize: 7,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    borderWidth: 1,
-  },
-  badgeEasy: {
-    backgroundColor: "#DCFCE7",
-    color: "#15803D",
-    borderColor: "#BBF7D0",
-  },
-  badgeMedium: {
-    backgroundColor: "#FEF3C7",
-    color: "#B45309",
-    borderColor: "#FDE68A",
-  },
-  badgeHard: {
-    backgroundColor: "#FEE2E2",
-    color: "#B91C1C",
-    borderColor: "#FECACA",
-  },
   marksBadge: {
     fontSize: 8,
     fontWeight: 600,
@@ -154,13 +155,57 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   footer: {
-    marginTop: 40,
+    marginTop: 30,
     textAlign: "center",
     fontSize: 8,
     fontWeight: 700,
     color: "#9CA3AF",
     textTransform: "uppercase",
     letterSpacing: 1,
+  },
+  // Answer Key Styles
+  answerKeyTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    textAlign: "center",
+    textTransform: "uppercase",
+    marginBottom: 20,
+    color: "#111827",
+    letterSpacing: 1,
+  },
+  answerBox: {
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    paddingBottom: 10,
+  },
+  answerQNum: {
+    fontSize: 11,
+    fontWeight: 700,
+    marginBottom: 4,
+    color: "#111827",
+  },
+  answerTextLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: "#065F46", // Dark green
+    marginBottom: 2,
+  },
+  answerText: {
+    fontSize: 10,
+    color: "#111827",
+    marginBottom: 8,
+  },
+  solutionTextLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: "#4B5563",
+    marginBottom: 2,
+  },
+  solutionText: {
+    fontSize: 9,
+    color: "#374151",
+    lineHeight: 1.4,
   },
 });
 
@@ -171,39 +216,70 @@ interface AssessmentPDFDocumentProps {
 
 export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocumentProps) {
   let currentQuestionIndex = 1;
+  const totalMarks = assignment?.totalMarks || 100;
+  const timeAllowed = Math.round(totalMarks * 1.5);
+
+  const flatQuestions: Array<{ qNum: number; answer: string; solution: string }> = [];
+  paper?.sections?.forEach((section: any) => {
+    section.questions.forEach((q: any) => {
+      flatQuestions.push({
+        qNum: currentQuestionIndex++,
+        answer: q.answer,
+        solution: q.solution,
+      });
+    });
+  });
+
+  // Reset for actual rendering
+  currentQuestionIndex = 1;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header Area */}
         <View style={styles.header}>
-          <Text style={styles.title}>{assignment?.title || "Assessment"}</Text>
+          <Text style={styles.schoolName}>Delhi Public School, Sector-4, Bokaro</Text>
+          <Text style={styles.subjectText}>Subject: {assignment?.title || "Assessment"}</Text>
+          <Text style={styles.classText}>Class: 8</Text>
+
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>Total Marks: ________</Text>
-            <Text style={styles.metaText}>Time Allowed: ________</Text>
+            <Text style={styles.metaText}>Time Allowed: {timeAllowed} Minutes</Text>
+            <Text style={styles.metaText}>Maximum Marks: {totalMarks}</Text>
+          </View>
+
+          <View style={styles.instructionsBox}>
+            <Text style={styles.instructionTitle}>General Instructions:</Text>
+            <Text style={styles.instructionItem}>• All questions are compulsory.</Text>
+            <Text style={styles.instructionItem}>• Read all questions carefully before answering.</Text>
+            <Text style={styles.instructionItem}>• Write neatly and legibly.</Text>
+            {assignment?.instructions && (
+              <Text style={styles.instructionItem}>• {assignment.instructions}</Text>
+            )}
           </View>
 
           <View style={styles.studentInfoArea}>
             <View style={styles.studentInfoField}>
-              <Text style={styles.studentInfoLabel}>Student Name:</Text>
-              <View style={styles.studentInfoLine} />
+              <Text style={styles.studentInfoLabel}>Name:</Text>
+              <View style={styles.studentInfoLineLg} />
             </View>
             <View style={styles.studentInfoField}>
-              <Text style={styles.studentInfoLabel}>Date:</Text>
-              <View style={styles.studentInfoLineSmall} />
+              <Text style={styles.studentInfoLabel}>Roll No:</Text>
+              <View style={styles.studentInfoLineSm} />
+            </View>
+            <View style={styles.studentInfoField}>
+              <Text style={styles.studentInfoLabel}>Section:</Text>
+              <View style={styles.studentInfoLineSm} />
             </View>
           </View>
         </View>
 
         {/* Sections Area */}
         {paper?.sections.map((section: any, idx: number) => {
-          const sectionLabel = String.fromCharCode(65 + idx);
-          
           return (
             <View key={idx} style={styles.section} wrap={false}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>
-                  Section {sectionLabel}: {section.title}
+                  {section.title}
                 </Text>
                 {section.instruction && (
                   <Text style={styles.sectionInstruction}>
@@ -213,23 +289,11 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
               </View>
 
               {section.questions.map((q: any, qIdx: number) => {
-                const badgeStyle =
-                  q.difficulty === "easy"
-                    ? styles.badgeEasy
-                    : q.difficulty === "medium"
-                    ? styles.badgeMedium
-                    : styles.badgeHard;
-
                 return (
                   <View key={qIdx} style={styles.questionRow} wrap={false}>
                     <Text style={styles.questionNumber}>Q{currentQuestionIndex++}.</Text>
                     <View style={styles.questionContent}>
                       <Text style={styles.questionText}>{q.question}</Text>
-                      <View style={styles.badgesRow}>
-                        <Text style={[styles.badge, badgeStyle]}>
-                          {q.difficulty}
-                        </Text>
-                      </View>
                     </View>
                     <Text style={styles.marksBadge}>
                       [{q.marks} {q.marks === 1 ? "Mark" : "Marks"}]
@@ -244,6 +308,23 @@ export function AssessmentPDFDocument({ assignment, paper }: AssessmentPDFDocume
         <Text style={styles.footer} fixed>
           — End of Paper —
         </Text>
+      </Page>
+
+      {/* Answer Key Page(s) */}
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.answerKeyTitle}>ANSWER KEY & SOLUTIONS</Text>
+        
+        {flatQuestions.map((fq) => (
+          <View key={fq.qNum} style={styles.answerBox} wrap={false}>
+            <Text style={styles.answerQNum}>Question {fq.qNum}</Text>
+            
+            <Text style={styles.answerTextLabel}>Correct Answer:</Text>
+            <Text style={styles.answerText}>{fq.answer}</Text>
+            
+            <Text style={styles.solutionTextLabel}>Solution / Explanation:</Text>
+            <Text style={styles.solutionText}>{fq.solution}</Text>
+          </View>
+        ))}
       </Page>
     </Document>
   );
