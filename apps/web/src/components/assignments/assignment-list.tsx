@@ -40,24 +40,20 @@ export function AssignmentList() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-4">
-      {/* Panel with purple border glow — matches original design */}
-      <div className="rounded-2xl border-2 border-[#7B5EA7] bg-[#FAFAFA] overflow-hidden shadow-[0_0_0_1px_rgba(123,94,167,0.15)]">
-        <div className="flex-1 overflow-y-auto px-8 py-6 relative">
-          <div className="max-w-[1200px] mx-auto w-full">
-            {/* Header Section */}
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#4CAF50] flex-shrink-0" />
-                <h1 className="text-[20px] font-extrabold text-gray-900 tracking-tight leading-tight">
-                  Assignments
-                </h1>
-              </div>
-              <p className="text-[13px] text-gray-400 font-medium ml-5">
-                Manage and create assignments for your classes.
-              </p>
-            </div>
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+      <div className="max-w-[1200px] mx-auto w-full">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#4CAF50] flex-shrink-0" />
+            <h1 className="text-[20px] font-bold text-gray-900 tracking-tight leading-tight">
+              Assignments
+            </h1>
           </div>
+          <p className="text-[13px] text-gray-400 font-medium ml-5">
+            Manage and create assignments for your classes.
+          </p>
+        </div>
 
           {/* Filter + Search row */}
           <div className="flex items-center gap-4 mb-8">
@@ -113,9 +109,8 @@ export function AssignmentList() {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Floating Create Assignment button */}
+        {/* Floating Create Assignment button */}
       <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#fafafc] to-transparent pointer-events-none z-20" />
       <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-30">
         <button

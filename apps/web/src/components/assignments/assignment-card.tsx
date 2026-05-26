@@ -25,10 +25,10 @@ export function AssignmentCard({
   const isGenerated = status === "generated";
 
   return (
-    <div className="bg-white rounded-3xl p-6 flex flex-col justify-between h-[160px] relative shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300">
+    <div className="bg-white rounded-[20px] px-6 py-5 flex flex-col justify-between h-[116px] relative shadow-[0_4px_24px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300">
       {/* Header row: title + context menu */}
       <div className="flex items-start justify-between gap-4">
-        <h3 className="text-[22px] font-extrabold text-gray-900 leading-tight tracking-tight">
+        <h3 className="text-[18px] font-bold text-gray-800 leading-tight tracking-tight">
           {assignment.title}
         </h3>
 
@@ -81,10 +81,10 @@ export function AssignmentCard({
       {/* Footer row: dates */}
       <div className="flex items-center justify-between text-[13px]">
         <span className="text-gray-500 font-medium">
-          <span className="text-gray-900 font-extrabold">Assigned on :</span> {assignment.assignedOn || "20-06-2025"}
+          <span className="text-gray-800 font-bold">Assigned on :</span> {assignment.assignedOn || "20-06-2025"}
         </span>
         <span className="text-gray-500 font-medium">
-          <span className="text-gray-900 font-extrabold">Due :</span> {assignment.dueDate || "21-06-2025"}
+          <span className="text-gray-800 font-bold">Due :</span> {assignment.dueDate || "21-06-2025"}
         </span>
       </div>
     </div>
