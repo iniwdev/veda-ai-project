@@ -13,6 +13,7 @@ import type { ApiResponse } from "@repo/types";
 interface AssignmentState {
   assignments: Assignment[];
   view: AssignmentView;
+  selectedAssignmentId: string | null;
   searchQuery: string;
   isLoading: boolean;
   error: string | null;
@@ -23,10 +24,11 @@ interface AssignmentState {
   clearCreateDraft: () => void;
 
   // Actions
-  setView: (view: AssignmentView) => void;
+  setView: (view: AssignmentView, assignmentId?: string | null) => void;
   setSearchQuery: (query: string) => void;
   fetchAssignments: () => Promise<void>;
   addAssignment: (assignment: Assignment) => void;
+  updateAssignmentStatus: (id: string, status: Assignment["status"]) => void;
   deleteAssignment: (id: string) => Promise<void>;
   navigateToCreate: () => void;
   cancelCreate: () => void;
@@ -39,6 +41,7 @@ export const useAssignmentStore = create<AssignmentState>()(
     (set, get) => ({
       assignments: [],
       view: "list", // Will be updated on fetch
+      selectedAssignmentId: null,
       searchQuery: "",
       isLoading: false,
       error: null,
@@ -49,7 +52,7 @@ export const useAssignmentStore = create<AssignmentState>()(
 
       clearCreateDraft: () => set({ createDraft: {} }, false, "clearCreateDraft"),
 
-      setView: (view) => set({ view }, false, "setView"),
+      setView: (view, assignmentId = null) => set({ view, selectedAssignmentId: assignmentId }, false, "setView"),
 
       setSearchQuery: (query) =>
         set({ searchQuery: query }, false, "setSearchQuery"),
@@ -66,6 +69,7 @@ export const useAssignmentStore = create<AssignmentState>()(
             title: item.title,
             assignedOn: new Date(item.createdAt).toLocaleDateString("en-GB"),
             dueDate: item.dueDate,
+            status: item.status || "draft",
           }));
 
           set(
@@ -85,7 +89,7 @@ export const useAssignmentStore = create<AssignmentState>()(
       addAssignment: (assignment) =>
         set(
           (state) => {
-            const next = [assignment, ...state.assignments];
+            const next = [{ ...assignment, status: assignment.status || "draft" }, ...state.assignments];
             return {
               assignments: next,
               view: "list",
@@ -93,6 +97,15 @@ export const useAssignmentStore = create<AssignmentState>()(
           },
           false,
           "addAssignment"
+        ),
+
+      updateAssignmentStatus: (id, status) =>
+        set(
+          (state) => ({
+            assignments: state.assignments.map(a => a.id === id ? { ...a, status } : a)
+          }),
+          false,
+          "updateAssignmentStatus"
         ),
 
       deleteAssignment: async (id) => {

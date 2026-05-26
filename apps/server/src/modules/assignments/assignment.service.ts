@@ -45,6 +45,15 @@ export class AssignmentService {
     const { generateAssessmentQueue } = await import("./assignment.queue.js");
     await generateAssessmentQueue.add("generate", { assignmentId: id });
   }
+
+  async getPaper(assignmentId: string) {
+    const { GeneratedPaperModel } = await import("./generated-paper.model.js");
+    const paper = await GeneratedPaperModel.findOne({ assignmentId });
+    if (!paper) {
+      throw new AppError(404, "Generated paper not found");
+    }
+    return paper;
+  }
 }
 
 export const assignmentService = new AssignmentService();

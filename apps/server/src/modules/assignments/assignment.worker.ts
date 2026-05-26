@@ -4,6 +4,7 @@ import { AssignmentModel } from "./assignment.model.js";
 import { GENERATE_ASSESSMENT_QUEUE, GenerateAssessmentJobData } from "./assignment.queue.js";
 import { openaiService } from "./openai.service.js";
 import { GeneratedPaperModel } from "./generated-paper.model.js";
+import { publishAssignmentEvent } from "../../sockets/index.js";
 
 const processor = async (job: Job<GenerateAssessmentJobData>) => {
   const { assignmentId } = job.data;
@@ -18,6 +19,8 @@ const processor = async (job: Job<GenerateAssessmentJobData>) => {
     // Set status to processing
     assignment.status = "processing";
     await assignment.save();
+    
+    publishAssignmentEvent("generation:started", { assignmentId });
     
     // Call OpenAI to generate content safely
     console.info(`[Worker] Generating AI paper for assignment ${assignmentId}...`);
@@ -34,6 +37,8 @@ const processor = async (job: Job<GenerateAssessmentJobData>) => {
     assignment.status = "generated";
     await assignment.save();
     
+    publishAssignmentEvent("generation:completed", { assignmentId });
+    
     console.info(`[Worker] Completed processing assignment ${assignmentId}`);
     return { success: true };
   } catch (error) {
@@ -42,6 +47,7 @@ const processor = async (job: Job<GenerateAssessmentJobData>) => {
     // Try to update status to failed
     try {
       await AssignmentModel.findByIdAndUpdate(assignmentId, { status: "failed" });
+      publishAssignmentEvent("generation:failed", { assignmentId });
     } catch (dbError) {
       console.error(`[Worker] Failed to update status to failed for ${assignmentId}:`, dbError);
     }

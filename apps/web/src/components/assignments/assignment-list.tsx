@@ -3,6 +3,8 @@
 import { SlidersHorizontal, Search, X, Plus } from "lucide-react";
 import { useAssignmentStore } from "@/store/assignment.store";
 import { AssignmentCard } from "./assignment-card";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 // ─── Assignment List ──────────────────────────────────────────────────────────
 
@@ -12,6 +14,18 @@ export function AssignmentList() {
   const setSearchQuery = useAssignmentStore((s) => s.setSearchQuery);
   const deleteAssignment = useAssignmentStore((s) => s.deleteAssignment);
   const navigateToCreate = useAssignmentStore((s) => s.navigateToCreate);
+  const setView = useAssignmentStore((s) => s.setView);
+  const updateAssignmentStatus = useAssignmentStore((s) => s.updateAssignmentStatus);
+
+  const handleGenerate = async (id: string) => {
+    try {
+      await apiClient.post(`/assignments/${id}/generate`, {});
+      updateAssignmentStatus(id, "processing");
+      toast.success("Assignment generation started");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to start generation");
+    }
+  };
 
   const filtered = assignments.filter((a) =>
     a.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -75,7 +89,8 @@ export function AssignmentList() {
               key={assignment.id}
               assignment={assignment}
               onDelete={deleteAssignment}
-              onView={(id) => console.info("View assignment:", id)}
+              onView={(id) => setView("view", id)}
+              onGenerate={handleGenerate}
             />
           ))}
 

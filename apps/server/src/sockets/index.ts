@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import type { Env } from "../config/env.js";
+import { redisSubscriber } from "../config/redis.js";
 
 export type SocketServer = SocketIOServer;
 
@@ -16,30 +17,36 @@ export function createSocketServer(httpServer: HttpServer, env: Env): SocketServ
   io.on("connection", (socket) => {
     console.info(`Socket connected: ${socket.id}`);
 
-    // ── Subscribe to job updates ────────────────────────────────────────────
-    socket.on("subscribe:job", (jobId: string) => {
-      void socket.join(`job:${jobId}`);
-      console.info(`Socket ${socket.id} subscribed to job:${jobId}`);
-    });
-
-    socket.on("unsubscribe:job", (jobId: string) => {
-      void socket.leave(`job:${jobId}`);
-    });
-
     socket.on("disconnect", (reason) => {
       console.info(`Socket disconnected: ${socket.id} — reason: ${reason}`);
     });
   });
 
+  // Subscribe to Redis pub/sub for cross-process or worker communication
+  redisSubscriber.subscribe("assignment-updates", (err) => {
+    if (err) {
+      console.error("Failed to subscribe to assignment-updates channel", err);
+    }
+  });
+
+  redisSubscriber.on("message", (channel, message) => {
+    if (channel === "assignment-updates") {
+      try {
+        const payload = JSON.parse(message);
+        const { event, data } = payload;
+        // Emit globally so all clients get the update
+        io.emit(event, data);
+      } catch (err) {
+        console.error("Failed to process redis message", err);
+      }
+    }
+  });
+
   return io;
 }
 
-// Helper to emit job progress updates from workers
-export function emitJobProgress(
-  io: SocketServer,
-  jobId: string,
-  progress: number,
-  status: string,
-): void {
-  io.to(`job:${jobId}`).emit("job:progress", { jobId, progress, status });
+export function publishAssignmentEvent(event: string, data: any): void {
+  import("../config/redis.js").then(({ redisConnection }) => {
+    redisConnection.publish("assignment-updates", JSON.stringify({ event, data }));
+  }).catch(console.error);
 }

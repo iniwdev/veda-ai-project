@@ -1,12 +1,15 @@
 // ─── Assignment ───────────────────────────────────────────────────────────────
 
-export type AssignmentView = "empty" | "list" | "create";
+export type AssignmentView = "empty" | "list" | "create" | "view";
+
+export type AssignmentStatus = "draft" | "processing" | "generated" | "failed";
 
 export interface Assignment {
   id: string;
   title: string;
   assignedOn: string;
   dueDate?: string;
+  status?: AssignmentStatus;
 }
 
 // ─── Question (Create Form) ───────────────────────────────────────────────────

@@ -5,13 +5,14 @@ import { useAssignmentStore } from "@/store/assignment.store";
 import { EmptyState } from "@/components/assignments/empty-state";
 import { AssignmentList } from "@/components/assignments/assignment-list";
 import { CreateAssignment } from "@/components/assignments/create-assignment";
+import { GeneratedPaperView } from "@/components/generated-paper/generated-paper-view";
 
 // ─── Assignments Page ─────────────────────────────────────────────────────────
 // This is the ONLY place that decides which content to render.
 // Sidebar + TopBar never re-mount — they live in the parent layout.
 
 export default function AssignmentsPage() {
-  const { view, fetchAssignments, isLoading } = useAssignmentStore();
+  const { view, selectedAssignmentId, fetchAssignments, isLoading } = useAssignmentStore();
 
   useEffect(() => {
     fetchAssignments();
@@ -30,6 +31,7 @@ export default function AssignmentsPage() {
       {view === "empty" && <EmptyState />}
       {view === "list" && <AssignmentList />}
       {view === "create" && <CreateAssignment />}
+      {view === "view" && selectedAssignmentId && <GeneratedPaperView assignmentId={selectedAssignmentId} />}
     </>
   );
 }

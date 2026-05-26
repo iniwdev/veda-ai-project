@@ -75,6 +75,21 @@ export class AssignmentController {
       next(error);
     }
   }
+
+  async getPaper(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const paper = await assignmentService.getPaper(id);
+      
+      res.status(200).json({
+        success: true,
+        data: paper,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const assignmentController = new AssignmentController();
