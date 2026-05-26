@@ -25,8 +25,44 @@ export function ExportPdfButton({ assignment }: ExportPdfButtonProps) {
       const module = await import("html2pdf.js");
       const html2pdf: any = module.default ? module.default : module;
       
-      const element = document.getElementById("question-paper");
-      if (!element) throw new Error("Paper element not found");
+      const originalElement = document.getElementById("question-paper");
+      if (!originalElement) throw new Error("Paper element not found");
+      
+      // Clone the element to avoid mutating the visible DOM
+      const clone = originalElement.cloneNode(true) as HTMLElement;
+      
+      // Position offscreen so it doesn't disrupt UI but still has layout for html2canvas
+      clone.style.position = 'absolute';
+      clone.style.top = '-9999px';
+      clone.style.left = '-9999px';
+      document.body.appendChild(clone);
+      
+      // html2canvas completely crashes on Tailwind v4 'oklch/oklab' colors.
+      // We must aggressively strip all color classes and replace them with standard hex inline styles.
+      const allEls = clone.querySelectorAll('*');
+      allEls.forEach((el: any) => {
+        const className = el.className;
+        if (typeof className === 'string') {
+          // Add safe hex styles
+          if (className.includes('text-gray-900') || className.includes('text-black')) el.style.color = '#111827';
+          if (className.includes('text-gray-700')) el.style.color = '#374151';
+          if (className.includes('text-gray-500')) el.style.color = '#6b7280';
+          if (className.includes('bg-gray-50/30') || className.includes('bg-gray-50')) el.style.backgroundColor = '#f9fafb';
+          if (className.includes('bg-white')) el.style.backgroundColor = '#ffffff';
+          if (className.includes('border-gray-900') || className.includes('border-black')) el.style.borderColor = '#111827';
+          if (className.includes('border-gray-300')) el.style.borderColor = '#d1d5db';
+          if (className.includes('border-gray-200')) el.style.borderColor = '#e5e7eb';
+          
+          // Strip the offending tailwind classes
+          el.className = className
+            .replace(/text-gray-\d+/g, '')
+            .replace(/bg-gray-\d+(\/\d+)?/g, '')
+            .replace(/border-gray-\d+/g, '')
+            .replace(/text-black/g, '')
+            .replace(/border-black/g, '')
+            .replace(/bg-white/g, '');
+        }
+      });
       
       const paperTitle = assignment?.title?.replace(/\s+/g, "_") || "Assessment";
       
@@ -42,7 +78,10 @@ export function ExportPdfButton({ assignment }: ExportPdfButtonProps) {
         jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
       };
 
-      await html2pdf().set(opt).from(element).save();
+      await html2pdf().set(opt).from(clone).save();
+      
+      // Cleanup clone
+      document.body.removeChild(clone);
     } catch (error) {
       originalConsoleError("Failed to generate PDF:", error);
       alert("Failed to generate PDF. Please try again.");
