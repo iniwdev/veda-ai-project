@@ -68,10 +68,13 @@ export function AssignmentCard({ assignment, onDelete, onView, onGenerate }: Ass
               <div className="absolute right-0 top-8 z-20 bg-white rounded-xl shadow-lg border border-gray-150 py-1 min-w-[148px] overflow-hidden">
                 <button
                   onClick={() => {
+                    if (assignment.status !== "generated") return;
                     onView(assignment.id);
                     setMenuOpen(false);
                   }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                  disabled={assignment.status !== "generated"}
+                  title={assignment.status !== "generated" ? "Generate the paper first" : "View generated paper"}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Eye size={14} strokeWidth={1.8} />
                   View Assignment

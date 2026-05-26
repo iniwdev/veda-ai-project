@@ -18,9 +18,12 @@ export function ExportPdfButton({ assignment, paper }: ExportPdfButtonProps) {
     setIsClient(true);
   }, []);
 
-  if (!isClient) {
+  if (!isClient || !assignment || !paper) {
     return (
-      <button className="flex items-center gap-2 px-4 py-2 bg-[#7B5EA7] text-white text-[12.5px] font-medium rounded-lg opacity-50 cursor-not-allowed shadow-sm">
+      <button
+        disabled
+        className="flex items-center gap-2 px-4 py-2 bg-[#7B5EA7] text-white text-[12.5px] font-medium rounded-lg opacity-50 cursor-not-allowed shadow-sm"
+      >
         <Printer size={14} />
         Print Paper
       </button>

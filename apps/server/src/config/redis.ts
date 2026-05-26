@@ -23,7 +23,7 @@ redisConnection.on("error", (err: Error) => {
 
 export async function connectRedis(): Promise<void> {
   try {
-    await redisConnection.connect();
+    await Promise.all([redisConnection.connect(), redisSubscriber.connect()]);
   } catch (error) {
     console.error("❌ Redis connection failed:", error);
     throw error;

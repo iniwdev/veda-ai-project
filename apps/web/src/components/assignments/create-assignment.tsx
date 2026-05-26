@@ -76,11 +76,15 @@ export function CreateAssignment() {
       });
 
       if (res.data) {
+        const raw = res.data;
         useAssignmentStore.getState().addAssignment({
-          id: res.data._id,
-          title: res.data.title,
-          assignedOn: new Date(res.data.createdAt).toLocaleDateString("en-GB"),
-          dueDate: res.data.dueDate,
+          id: raw._id ?? raw.id ?? "",
+          title: raw.title ?? data.assignmentTitle,
+          assignedOn: raw.createdAt
+            ? new Date(raw.createdAt).toLocaleDateString("en-GB")
+            : new Date().toLocaleDateString("en-GB"),
+          dueDate: raw.dueDate ?? data.dueDate,
+          status: raw.status ?? "draft",
         });
       }
 
