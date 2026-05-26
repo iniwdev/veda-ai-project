@@ -217,7 +217,7 @@ This monorepo is fully optimized for modern cloud deployments.
 
 **Your Name / Organization**
 - Website: [yourportfolio.com](https://yourportfolio.com)
-- GitHub: [@yourusername](https://github.com/yourusername)
+- GitHub: [@iniwdev](https://github.com/iniwdev)
 - LinkedIn: [Your Name](https://linkedin.com/in/yourprofile)
 
 ---
