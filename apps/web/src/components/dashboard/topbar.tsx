@@ -35,34 +35,32 @@ const ChevronDownIcon = () => (
 // ─── Topbar (Header) ──────────────────────────────────────────────────────────
 
 export const TopBar: React.FC = () => (
-  <header className="h-[64px] bg-white/70 backdrop-blur-xl flex items-center justify-between px-8 flex-shrink-0 sticky top-0 z-20 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+  <header className="h-[72px] bg-white flex items-center justify-between px-8 flex-shrink-0 z-20 rounded-tl-3xl shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
     {/* Left: back + breadcrumb */}
     <div className="flex items-center gap-4">
-      <button className="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100/80 hover:text-gray-700 transition-all duration-200 shadow-sm border border-gray-100/50 bg-white/50">
+      <button className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
         <ArrowLeftIcon />
       </button>
-      <div className="flex items-center gap-2.5 text-gray-500">
+      <div className="flex items-center gap-2.5 text-gray-400">
         <GridIcon size={18} />
-        <span className="text-[15px] font-semibold text-gray-700 tracking-tight">Assignments</span>
+        <span className="text-[15px] font-semibold text-gray-400 tracking-tight">Assignment</span>
       </div>
     </div>
 
     {/* Right: bell + user */}
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-6">
       {/* Bell */}
-      <button className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:bg-white transition-all duration-200 shadow-sm border border-transparent hover:border-gray-100">
+      <button className="relative w-10 h-10 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-all duration-200">
         <BellIcon />
-        <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-[2.5px] ring-white" />
+        <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#FF5A20]" />
       </button>
 
       {/* User */}
-      <button className="flex items-center gap-3 pl-1.5 pr-3 py-1.5 rounded-full hover:bg-white transition-all duration-200 border border-transparent hover:border-gray-100 hover:shadow-sm">
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-inner">
-          <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-bold">
-            JD
-          </div>
+      <button className="flex items-center gap-3 pl-1 pr-3 py-1 bg-white hover:bg-gray-50 rounded-full transition-all duration-200 shadow-sm border border-gray-100">
+        <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-gray-100 bg-orange-50 flex items-center justify-center">
+          <span className="text-lg">🧔🏼</span>
         </div>
-        <span className="text-[14px] font-semibold text-gray-800 tracking-tight">John Doe</span>
+        <span className="text-[14px] font-bold text-gray-900 tracking-tight">John Doe</span>
         <span className="text-gray-400">
           <ChevronDownIcon />
         </span>

@@ -65,19 +65,14 @@ const PlusIcon = ({ size = 16 }: { size?: number }) => (
 const VedaAILogo = () => (
   <div className="flex items-center gap-2.5">
     <div
-      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-      style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}
+      className="w-[38px] h-[38px] rounded-[14px] flex items-center justify-center flex-shrink-0"
+      style={{ background: "linear-gradient(135deg, #f97316 0%, #dc2626 100%)" }}
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 3C7 3 3 7 3 12C3 14.5 4 16.8 5.7 18.4L3 21H12C17 21 21 17 21 12C21 7 17 3 12 3Z"
-          fill="white"
-          fillOpacity="0.9"
-        />
-        <path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M4 8l6 10 10-14" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
-    <span className="text-[17px] font-semibold text-gray-900 tracking-[-0.01em]">VedaAI</span>
+    <span className="text-[22px] font-extrabold text-gray-900 tracking-tight">VedaAI</span>
   </div>
 );
 
@@ -88,24 +83,32 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   onClick?: () => void;
+  badge?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false, onClick }) => (
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false, onClick, badge }) => (
   <button
     onClick={onClick}
     className={`
-      w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium
+      w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] font-medium
       transition-all duration-200 cursor-pointer
       ${active
-        ? "bg-gray-100/80 text-gray-900 shadow-sm"
-        : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+        ? "bg-gray-100/80 text-gray-900"
+        : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
       }
     `}
   >
-    <span className={`flex-shrink-0 transition-colors ${active ? "text-gray-800" : "text-gray-400 group-hover:text-gray-600"}`}>
-      {icon}
-    </span>
-    <span className="leading-none tracking-tight">{label}</span>
+    <div className="flex items-center gap-3">
+      <span className={`flex-shrink-0 ${active ? "text-gray-900" : "text-gray-400"}`}>
+        {icon}
+      </span>
+      <span className="leading-none">{label}</span>
+    </div>
+    {badge && (
+      <span className="bg-[#FF5A20] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+        {badge}
+      </span>
+    )}
   </button>
 );
 
@@ -118,25 +121,24 @@ export const Sidebar: React.FC = () => {
   const navItems = [
     { icon: <GridIcon />, label: "Home" },
     { icon: <UsersIcon />, label: "My Groups" },
-    { icon: <FileTextIcon />, label: "Assignments" },
+    { icon: <FileTextIcon />, label: "Assignments", badge: 10 },
     { icon: <WandIcon />, label: "AI Teacher's Toolkit" },
     { icon: <BookIcon />, label: "My Library" },
   ];
 
   return (
-    <aside className="w-[260px] flex-shrink-0 bg-white/80 backdrop-blur-md flex flex-col border-r border-gray-100 shadow-[2px_0_12px_rgba(0,0,0,0.02)] z-30 relative h-full">
+    <aside className="w-[260px] flex-shrink-0 bg-white flex flex-col border-r-2 border-[#1E88E5] h-full shadow-[2px_0_12px_rgba(0,0,0,0.03)]">
       {/* Logo */}
-      <div className="px-6 pt-6 pb-6">
+      <div className="px-6 pt-8 pb-6">
         <VedaAILogo />
       </div>
 
       {/* Create Assignment Button */}
-      <div className="px-5 pb-6">
-        <div className="relative group rounded-full">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full blur-md opacity-30 group-hover:opacity-60 transition-opacity duration-300" />
+      <div className="px-5 pb-8">
+        <div className="ring-[3px] ring-offset-4 ring-offset-white ring-[#FF5A20] rounded-full mx-1 hover:ring-opacity-80 transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,90,32,0.3)]">
           <button
             onClick={navigateToCreate}
-            className="relative w-full bg-[#0a0a0a] text-white text-[14px] font-semibold rounded-full py-3.5 px-4 flex items-center justify-center gap-2.5 shadow-md hover:scale-[1.02] hover:shadow-lg transition-all duration-300"
+            className="w-full bg-[#1A1A1A] text-white text-[14px] font-semibold rounded-full py-3.5 px-4 flex items-center justify-center gap-2.5 hover:bg-black transition-colors duration-150"
           >
             <PlusIcon size={16} />
             <span>Create Assignment</span>
@@ -145,7 +147,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
+      <nav className="flex-1 px-4 flex flex-col gap-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavItem
             key={item.label}
@@ -159,35 +161,24 @@ export const Sidebar: React.FC = () => {
 
       {/* Bottom section */}
       <div className="mt-auto px-4 pb-6">
-        {/* Divider */}
-        <div className="border-t border-gray-100 mb-4 mx-2" />
-
         {/* Settings */}
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors duration-200 mb-4">
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[14px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors duration-100 mb-4">
           <SettingsIcon />
           <span>Settings</span>
         </button>
 
         {/* School Profile Card */}
-        <div className="flex items-center gap-3 px-3 py-3 rounded-2xl bg-white border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 cursor-pointer transition-all duration-300">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-100/80 hover:bg-gray-200/80 cursor-pointer transition-colors shadow-sm border border-gray-100">
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden shadow-inner">
-            <div
-              className="w-full h-full rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: "linear-gradient(135deg, #f97316, #ea580c)" }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="white" fillOpacity="0.9" />
-                <polyline points="9 22 9 12 15 12 15 22" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-              </svg>
-            </div>
+          <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-[#FFE4D6] flex items-center justify-center border border-orange-200">
+            <span className="text-xl">🧑‍🏫</span>
           </div>
           {/* School info */}
           <div className="min-w-0">
             <p className="text-[13px] font-bold text-gray-900 leading-tight truncate">
               Delhi Public School
             </p>
-            <p className="text-[11px] font-medium text-gray-400 leading-tight truncate mt-0.5">
+            <p className="text-[11px] text-gray-500 leading-tight truncate mt-0.5">
               Bokaro Steel City
             </p>
           </div>

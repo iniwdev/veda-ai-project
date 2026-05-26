@@ -47,7 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [updateAssignmentStatus]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#fafafc] font-sans">
+    <div className="flex h-screen w-full overflow-hidden bg-[#F5F5F0] font-sans">
       {/* Fixed Sidebar — never re-mounts */}
       <Sidebar />
 
