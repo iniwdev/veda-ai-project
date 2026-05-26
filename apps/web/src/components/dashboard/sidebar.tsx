@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAssignmentStore } from "@/store/assignment.store";
 
 // ─── Icon components (Lucide-style inline SVGs) ───────────────────────────────
@@ -81,49 +83,49 @@ const VedaAILogo = () => (
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
+  href: string;
   active?: boolean;
-  onClick?: () => void;
   badge?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active = false, onClick, badge }) => (
-  <button
-    onClick={onClick}
+const NavItem: React.FC<NavItemProps> = ({ icon, label, href, active = false, badge }) => (
+  <Link
+    href={href}
     className={`
-      w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] font-medium
-      transition-all duration-200 cursor-pointer
+      group w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[14px] font-medium
+      transition-all duration-300 cursor-pointer
       ${active
         ? "bg-gray-100/80 text-gray-900"
         : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
       }
     `}
   >
-    <div className="flex items-center gap-3">
-      <span className={`flex-shrink-0 ${active ? "text-gray-900" : "text-gray-400"}`}>
+    <div className="flex items-center gap-3 transition-transform duration-300 group-hover:translate-x-1">
+      <span className={`flex-shrink-0 transition-colors duration-300 ${active ? "text-gray-900" : "text-gray-400 group-hover:text-gray-600"}`}>
         {icon}
       </span>
       <span className="leading-none">{label}</span>
     </div>
     {badge && (
-      <span className="bg-[#FF5A20] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+      <span className="bg-[#FF5A20] text-white text-[10px] font-bold px-2 py-0.5 rounded-full transition-transform duration-300 group-hover:scale-105">
         {badge}
       </span>
     )}
-  </button>
+  </Link>
 );
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 export const Sidebar: React.FC = () => {
-  const [activeNav, setActiveNav] = useState("Assignments");
+  const pathname = usePathname();
   const navigateToCreate = useAssignmentStore((s) => s.navigateToCreate);
 
   const navItems = [
-    { icon: <GridIcon />, label: "Home" },
-    { icon: <UsersIcon />, label: "My Groups" },
-    { icon: <FileTextIcon />, label: "Assignments", badge: 10 },
-    { icon: <WandIcon />, label: "AI Teacher's Toolkit" },
-    { icon: <BookIcon />, label: "My Library" },
+    { icon: <GridIcon />, label: "Home", href: "/dashboard/home" },
+    { icon: <UsersIcon />, label: "My Groups", href: "/dashboard/groups" },
+    { icon: <FileTextIcon />, label: "Assignments", href: "/dashboard/assignments", badge: 10 },
+    { icon: <WandIcon />, label: "AI Teacher's Toolkit", href: "/dashboard/toolkit" },
+    { icon: <BookIcon />, label: "My Library", href: "/dashboard/library" },
   ];
 
   return (
@@ -153,8 +155,8 @@ export const Sidebar: React.FC = () => {
             key={item.label}
             icon={item.icon}
             label={item.label}
-            active={activeNav === item.label}
-            onClick={() => setActiveNav(item.label)}
+            href={item.href}
+            active={pathname?.startsWith(item.href) || false}
           />
         ))}
       </nav>
