@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./topbar";
