@@ -26,8 +26,7 @@ function isPermanentError(error: any): boolean {
     PERMANENT_STATUS_CODES.has(status) ||
     code === "invalid_api_key" ||
     code === "account_deactivated" ||
-    // Groq uses 429 for rate-limit (transient) but also for quota (permanent)
-    (status === 429 && (code === "insufficient_quota" || code === "rate_limit_exceeded_for_free_tier"))
+    status === 429 // Aggressively fallback to mock on ANY 429 to avoid broken generation loops
   );
 }
 
