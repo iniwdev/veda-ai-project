@@ -19,12 +19,20 @@ export function AssignmentList() {
 
   const handleGenerate = async (id: string) => {
     try {
-      await apiClient.post(`/assignments/${id}/generate`, {});
+      // Optimistically show processing state before the API call confirms
       updateAssignmentStatus(id, "processing");
-      toast.success("Assignment generation started");
+      await apiClient.post(`/assignments/${id}/generate`, {});
+      toast.success("Generation started");
     } catch (error: any) {
+      // Revert optimistic update on failure
+      updateAssignmentStatus(id, "failed");
       toast.error(error.message || "Failed to start generation");
     }
+  };
+
+  // Navigate to paper view where the PDF download button lives
+  const handleDownload = (id: string) => {
+    setView("view", id);
   };
 
   const filtered = assignments.filter((a) =>
@@ -91,6 +99,7 @@ export function AssignmentList() {
               onDelete={deleteAssignment}
               onView={(id) => setView("view", id)}
               onGenerate={handleGenerate}
+              onDownload={handleDownload}
             />
           ))}
 

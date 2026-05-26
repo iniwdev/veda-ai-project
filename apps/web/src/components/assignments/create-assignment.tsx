@@ -36,25 +36,33 @@ function StepIndicator({ currentStep = 1 }: { currentStep?: number }) {
 // ─── Create Assignment ────────────────────────────────────────────────────────
 
 export function CreateAssignment() {
-  const { cancelCreate, createDraft, setCreateDraft } = useAssignmentStore();
+  const { cancelCreate, createDraft, setCreateDraft, addAssignment, clearCreateDraft } =
+    useAssignmentStore();
 
   const methods = useForm<CreateAssignmentFormValues>({
     resolver: zodResolver(CreateAssignmentSchema),
     defaultValues: {
       assignmentTitle: createDraft.assignmentTitle || "",
       dueDate: createDraft.dueDate || "",
-      questions: createDraft.questions && createDraft.questions.length > 0 ? createDraft.questions : [
-        { id: "1", type: "Multiple Choice Questions", numQuestions: 4, marks: 1 },
-        { id: "2", type: "Short Questions", numQuestions: 3, marks: 2 },
-        { id: "3", type: "Diagram/Graph-Based Questions", numQuestions: 5, marks: 5 },
-        { id: "4", type: "Numerical Problems", numQuestions: 5, marks: 5 },
-      ],
+      questions:
+        createDraft.questions && createDraft.questions.length > 0
+          ? createDraft.questions
+          : [
+              { id: "1", type: "Multiple Choice Questions", numQuestions: 4, marks: 1 },
+              { id: "2", type: "Short Questions", numQuestions: 3, marks: 2 },
+              { id: "3", type: "Diagram/Graph-Based Questions", numQuestions: 5, marks: 5 },
+              { id: "4", type: "Numerical Problems", numQuestions: 5, marks: 5 },
+            ],
       instructions: createDraft.instructions || "",
       file: createDraft.file || undefined,
     },
   });
 
-  const { handleSubmit, watch, formState: { isSubmitting } } = methods;
+  const {
+    handleSubmit,
+    watch,
+    formState: { isSubmitting },
+  } = methods;
 
   // Persist draft to Zustand on change
   useEffect(() => {
@@ -66,6 +74,7 @@ export function CreateAssignment() {
 
   const onSubmit = async (data: CreateAssignmentFormValues) => {
     try {
+      // ── Step 1: Create assignment in DB ──────────────────────────────────
       const res = await apiClient.post<ApiResponse<any>>("/assignments", {
         title: data.assignmentTitle,
         dueDate: data.dueDate,
@@ -75,22 +84,46 @@ export function CreateAssignment() {
         uploadedFile: data.file ? "uploaded-file-placeholder" : undefined,
       });
 
-      if (res.data) {
-        const raw = res.data;
-        useAssignmentStore.getState().addAssignment({
-          id: raw._id ?? raw.id ?? "",
-          title: raw.title ?? data.assignmentTitle,
-          assignedOn: raw.createdAt
-            ? new Date(raw.createdAt).toLocaleDateString("en-GB")
-            : new Date().toLocaleDateString("en-GB"),
-          dueDate: raw.dueDate ?? data.dueDate,
-          status: raw.status ?? "draft",
-        });
+      if (!res.data) {
+        throw new Error("No data returned from server");
       }
 
-      toast.success("Assignment created successfully");
-      useAssignmentStore.getState().clearCreateDraft();
-      cancelCreate();
+      const raw = res.data;
+      const assignmentId: string = raw._id ?? raw.id ?? "";
+
+      if (!assignmentId) {
+        throw new Error("Server did not return an assignment ID");
+      }
+
+      // ── Step 2: Optimistically add to store with "processing" status ──────
+      // We set status to "processing" immediately so the card shows the
+      // spinner right away without waiting for the socket event.
+      addAssignment({
+        id: assignmentId,
+        title: raw.title ?? data.assignmentTitle,
+        assignedOn: raw.createdAt
+          ? new Date(raw.createdAt).toLocaleDateString("en-GB")
+          : new Date().toLocaleDateString("en-GB"),
+        dueDate: raw.dueDate ?? data.dueDate,
+        status: "processing",
+      });
+
+      // ── Step 3: Navigate back to list immediately (assignment is visible) ─
+      clearCreateDraft();
+      cancelCreate(); // switches view → list
+
+      toast.success("Assignment created! Generating paper...");
+
+      // ── Step 4: Trigger AI generation (fire-and-forget from client side) ──
+      // We do this AFTER navigation so the user immediately sees the card.
+      // The socket events will update the card status in real time.
+      apiClient
+        .post(`/assignments/${assignmentId}/generate`, {})
+        .catch((err: any) => {
+          // Generation trigger failed — update store to reflect this
+          useAssignmentStore.getState().updateAssignmentStatus(assignmentId, "failed");
+          toast.error(err.message || "Failed to start generation");
+        });
     } catch (error: any) {
       toast.error(error.message || "Failed to create assignment");
     }
@@ -158,7 +191,7 @@ export function CreateAssignment() {
             className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-xl text-[12.5px] font-semibold hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Next"}
+            {isSubmitting ? "Creating..." : "Create & Generate"}
             {!isSubmitting && (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M5 3L9 7L5 11" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
