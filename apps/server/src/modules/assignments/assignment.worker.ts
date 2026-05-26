@@ -2,6 +2,8 @@ import { Worker, Job } from "bullmq";
 import { redisConnection } from "../../config/redis.js";
 import { AssignmentModel } from "./assignment.model.js";
 import { GENERATE_ASSESSMENT_QUEUE, GenerateAssessmentJobData } from "./assignment.queue.js";
+import { openaiService } from "./openai.service.js";
+import { GeneratedPaperModel } from "./generated-paper.model.js";
 
 const processor = async (job: Job<GenerateAssessmentJobData>) => {
   const { assignmentId } = job.data;
@@ -17,10 +19,17 @@ const processor = async (job: Job<GenerateAssessmentJobData>) => {
     assignment.status = "processing";
     await assignment.save();
     
-    // Simulate AI generation delay
-    console.info(`[Worker] Simulating AI generation for assignment ${assignmentId}...`);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    // Call OpenAI to generate content safely
+    console.info(`[Worker] Generating AI paper for assignment ${assignmentId}...`);
+    const generatedContent = await openaiService.generateAssessment(assignment);
     
+    // Save generated paper
+    const paper = new GeneratedPaperModel({
+      assignmentId: assignment._id,
+      sections: generatedContent.sections,
+    });
+    await paper.save();
+
     // Set status to generated
     assignment.status = "generated";
     await assignment.save();
