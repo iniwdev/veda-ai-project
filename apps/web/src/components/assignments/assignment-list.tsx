@@ -40,58 +40,58 @@ export function AssignmentList() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-4">
-      {/* Panel with purple border glow — matches original design */}
-      <div className="rounded-2xl border-2 border-[#7B5EA7] bg-[#FAFAFA] overflow-hidden shadow-[0_0_0_1px_rgba(123,94,167,0.15)]">
-        {/* Panel header */}
-        <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-2xl">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <h1 className="text-[15px] font-bold text-gray-900 leading-tight">
-                Assignments
-              </h1>
-              <p className="text-[11.5px] text-gray-400 mt-0.5">
-                Manage and create assignments for your classes.
-              </p>
-            </div>
+    <div className="flex-1 overflow-y-auto px-6 py-8 relative">
+      <div className="max-w-[1200px] mx-auto w-full">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] flex-shrink-0 animate-pulse" />
+            <h1 className="text-[28px] font-extrabold text-gray-900 tracking-tight leading-tight">
+              Assignments
+            </h1>
           </div>
+          <p className="text-[15px] text-gray-500 font-medium ml-5">
+            Manage and create assignments for your classes.
+          </p>
+        </div>
 
-          {/* Filter + Search row */}
-          <div className="flex items-center gap-3 mt-3">
-            <button className="flex items-center gap-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">
-              <SlidersHorizontal size={13} strokeWidth={2} />
-              <span>Filter By</span>
-            </button>
-
-            <div className="flex-1 relative">
+        {/* Filter + Search row */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="flex-1 max-w-[480px] relative group">
+            <div className="absolute inset-0 bg-gray-200/50 rounded-2xl blur-sm transition-all duration-300 group-hover:bg-gray-200/80" />
+            <div className="relative flex items-center">
               <Search
-                size={13}
-                strokeWidth={2}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
+                strokeWidth={2.5}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Assignment"
-                className="w-full pl-8 pr-3 py-2 text-[12.5px] bg-white border border-gray-200 rounded-xl text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-[#7B5EA7] focus:ring-1 focus:ring-[#7B5EA7]/20 transition-all"
+                placeholder="Search assignments..."
+                className="w-full pl-11 pr-10 py-3.5 text-[14px] font-medium bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl text-gray-800 placeholder:text-gray-400 shadow-[0_4px_16px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-gray-200 focus:bg-white transition-all duration-300"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors bg-gray-100 rounded-full p-1"
                   aria-label="Clear search"
                 >
-                  <X size={12} />
+                  <X size={14} strokeWidth={2.5} />
                 </button>
               )}
             </div>
           </div>
+
+          <button className="flex items-center gap-2 text-[14px] font-medium text-gray-600 hover:text-gray-900 transition-colors px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+            <SlidersHorizontal size={16} strokeWidth={2} />
+            <span>Filters</span>
+          </button>
         </div>
 
         {/* Cards grid */}
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-24">
           {filtered.map((assignment) => (
             <AssignmentCard
               key={assignment.id}
@@ -112,13 +112,13 @@ export function AssignmentList() {
       </div>
 
       {/* Floating Create Assignment button */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-30">
         <button
           onClick={navigateToCreate}
-          className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#2a2a2a] text-white text-[13px] font-medium rounded-full px-5 py-3 shadow-lg transition-colors"
+          className="group flex items-center gap-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white text-[15px] font-semibold rounded-full pl-2 pr-6 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.16)] hover:-translate-y-1 transition-all duration-300"
         >
-          <div className="w-5 h-5 rounded-full bg-[#E8440A] flex items-center justify-center flex-shrink-0">
-            <Plus size={11} strokeWidth={3} />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-inner">
+            <Plus size={18} strokeWidth={2.5} className="text-white group-hover:scale-110 transition-transform duration-300" />
           </div>
           Create Assignment
         </button>
