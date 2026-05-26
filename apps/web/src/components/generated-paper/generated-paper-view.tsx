@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { ArrowLeft, Printer } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 import { useAssignmentStore } from "@/store/assignment.store";
 import { apiClient } from "@/lib/api";
 import { PaperSection } from "./paper-section";
@@ -25,6 +26,12 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
   const [paper, setPaper] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const paperRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: paperRef,
+    documentTitle: "Question_Paper",
+  });
 
   const assignment = assignments.find((a) => a.id === assignmentId);
 
@@ -142,19 +149,19 @@ export function GeneratedPaperView({ assignmentId }: GeneratedPaperViewProps) {
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => window.print()}
+            onClick={() => handlePrint()}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-[12px] font-medium rounded hover:bg-gray-50 transition-colors"
           >
             <Printer size={14} />
             Print
           </button>
-          <ExportPdfButton assignment={assignment} paper={paper} />
+          <ExportPdfButton assignment={assignment} />
         </div>
       </div>
 
       {/* Paper rendering area (Ultra-Compact Print-First Design) */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 font-serif print:p-0 print:overflow-visible">
-        <div id="question-paper" className="max-w-[794px] mx-auto bg-white min-h-[1123px] px-8 py-10 shadow-sm border border-gray-300 print:shadow-none print:border-none print:max-w-none print:mx-0 print:px-6 print:py-6">
+        <div id="question-paper" ref={paperRef} className="max-w-[794px] mx-auto bg-white min-h-[1123px] px-8 py-10 shadow-sm border border-gray-300 print:shadow-none print:border-none print:max-w-none print:mx-0 print:px-6 print:py-6">
           
           {buildExamHeader(paperMeta)}
           

@@ -70,3 +70,23 @@ body {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* ─── Print ─────────────────────────────────────────────────────────────────── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #question-paper,
+  #question-paper * {
+    visibility: visible;
+  }
+
+  #question-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+  }
+}
